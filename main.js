@@ -13,20 +13,41 @@ document.body.appendChild( stats.domElement );
 
 var renderer = new THREE.WebGLRenderer();
 renderer.setSize( window.innerWidth, window.innerHeight );
+renderer.shadowMap.enabled = true;
+renderer.shadowMapSoft = true;
+
+renderer.shadowCameraNear = 3;
+renderer.shadowCameraFar = camera.far;
+renderer.shadowCameraFov = 50;
+
+renderer.shadowMapBias = 0.0039;
+renderer.shadowMapDarkness = 0.5;
+renderer.shadowMapWidth = 1024;
+renderer.shadowMapHeight = 1024;
+
 document.body.appendChild( renderer.domElement );
 
 controls = new THREE.OrbitControls( camera );
 controls.addEventListener( 'change', render );
 
+var spotLight = new THREE.SpotLight( 0xffffff );
+spotLight.position.set( 10, 10, 100 );
+spotLight.castShadow = true;
+
+scene.add(spotLight);
+
 var geometry = new THREE.TorusKnotGeometry( 3 , 1, 100, 16 );
-var material = new THREE.MeshPhongMaterial( { ambient: 0x999999, color: 0xbbbbbb, specular: 0xeeeeee, shininess: 30 } );
-
-var light = new THREE.DirectionalLight(0xeeeeee, 1, 100);
-light.position.set(10,0,50);
-scene.add(light);
-
+var material = new THREE.MeshPhongMaterial( { color: 0xbbbbbb, specular: 0xeeeeee, shininess: 2 } );
 var cube = new THREE.Mesh( geometry, material );
+cube.castShadow = true;
 scene.add( cube );
+
+var geometry2 = new THREE.PlaneGeometry( 25, 25, 32 );
+var material2 = new THREE.MeshBasicMaterial( {color: 0xffff00, side: THREE.DoubleSide} );
+var plane = new THREE.Mesh( geometry2, material );
+plane.position.set(0,0,-5);
+plane.receiveShadow = true;
+scene.add( plane );
 
 camera.position.z = 20;
 camera.position.x = 1;
