@@ -1,5 +1,5 @@
-var SCREEN_WIDTH = window.innerWidth - 200;
-var SCREEN_HEIGHT = window.innerHeight - 100;
+var SCREEN_WIDTH = window.innerWidth;
+var SCREEN_HEIGHT = window.innerHeight;
 
 var camera, scene;
 var canvasRenderer, webglRenderer;

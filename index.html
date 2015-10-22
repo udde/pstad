@@ -192,7 +192,7 @@
 			float waterNoise = 0.5 * snoise(2.0*uv);
 			waterNoise += 0.25 * snoise(4.0*uv);
 			waterNoise += 0.125 * snoise(8.0*uv);
-			waterNoise = min(waterNoise, 0.0);
+			//waterNoise = min(waterNoise, 0.0);
 
 			height = snoise(uv);
 			height += 0.5 * snoise(2.0*uv);
@@ -201,9 +201,10 @@
 
 
 			vHeight = height; //send
-			height = height > -0.3 ? height : -0.3 + waterNoise;
-
 			height *= 100.0;
+			height = height > -0.3 ? height : 40.0*(-0.3 + waterNoise);
+
+
 			// height += 0.5;
 
 
