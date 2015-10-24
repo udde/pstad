@@ -1,5 +1,5 @@
-var SCREEN_WIDTH = window.innerWidth;
-var SCREEN_HEIGHT = window.innerHeight;
+var SCREEN_WIDTH = window.innerWidth - 10;
+var SCREEN_HEIGHT = window.innerHeight - 10;
 
 var camera, scene;
 var canvasRenderer, webglRenderer;
@@ -18,7 +18,7 @@ stats.setMode( 0 ); // 0: fps, 1: ms, 2: mb
 // stats.domElement.style.left = SCREEN_WIDTH+'px';
 // stats.domElement.style.top = '0px';
 
-document.getElementById("log").appendChild( stats.domElement);
+// document.getElementById("log").appendChild( stats.domElement);
 
 
 init();
@@ -32,7 +32,7 @@ function init() {
 	camera = new THREE.PerspectiveCamera(30, window.innerWidth / window.innerHeight, 1, 100000);
 	camera.position.x = 10;
 	camera.position.y = 10;
-	camera.position.z = 1200;
+	camera.position.z = 1500;
 	camera.lookAt({
 		x: 0,
 		y: 0,
@@ -42,12 +42,13 @@ function init() {
 	scene = new THREE.Scene();
 
 	// LIGHTS
-	scene.add(new THREE.AmbientLight(0x666666));
+	scene.add(new THREE.AmbientLight(0xeeeeee));
 
 	var light;
 
 	light = new THREE.DirectionalLight(0xdfebff, 1.75);
-	light.position.set(1000.0, 400.0, 1000.0);
+	light.position.set(0.0, 0.0, 400.0);
+	light.position.set(-100.0, -200.0, 100.0);
 	light.position.multiplyScalar(1.3);
 
 	light.castShadow = true;
@@ -76,7 +77,8 @@ function init() {
 	var shaderMaterial = new THREE.ShaderMaterial( {
 		uniforms: {
 			uLight: {type: "v3", value: light.position },
-			uCamera: {type: "v3", value: camera.position }
+			uCamera: {type: "v3", value: camera.position },
+			uPlaneSegmentsSize: {type : "f", value: 50.0}
 		},
 		vertexShader: document.getElementById( 'groundVertexShader' ).textContent,
 		fragmentShader: document.getElementById( 'groundFragmentShader' ).textContent,
@@ -86,19 +88,42 @@ function init() {
 );
 var flatMaterial = new THREE.MeshPhongMaterial({shading: THREE.FlatShading});
 
-plane = new THREE.Mesh(new THREE.PlaneGeometry(800, 600, 16, 12), shaderMaterial);
+plane = new THREE.Mesh(new THREE.PlaneGeometry(800, 600, 1*16, 1*12), shaderMaterial);
 // debugger;
 // plane.rotation.x = -Math.PI / 2;
 plane.receiveShadow = true;
 
 scene.add(plane);
 // debugger;
+var material = new THREE.LineBasicMaterial({
+	color: 0x0000ff
+});
+
+var geometry = new THREE.Geometry();
+geometry.vertices.push(
+	new THREE.Vector3( 0, 0, 10 ),
+	new THREE.Vector3( 10, 0, 10 ),
+	new THREE.Vector3( 20, 0, 10 ),
+	new THREE.Vector3( 30, 0, 10 ),
+	new THREE.Vector3( 40, 0, 10 ),
+	new THREE.Vector3( 50, 0, 10 ),
+	new THREE.Vector3( 60, 0, 10 )
+);
+
+var line = new THREE.Line( geometry, shaderMaterial );
+// scene.add( line );
+
+
+water = new THREE.Mesh(new THREE.PlaneGeometry(800, 600, 32, 24),new THREE.MeshPhongMaterial( { color: 0x77bbee, shading: THREE.FlatShading } ));
+scene.add(water);
+
 
 var geometry = new THREE.TorusGeometry( 120, 40, 6, 6 );
 var material = new THREE.MeshPhongMaterial( { color: 0xffff00, shading: THREE.FlatShading } );
 var torus = new THREE.Mesh( geometry, shaderMaterial );
 // scene.add( torus );
-
+var ns = geometry.computeFaceNormals ();
+console.log(ns);
 var groundVertices = plane.geometry.vertices;
 console.log(groundVertices);
 
@@ -146,8 +171,7 @@ geometry.addAttribute( 'position', new THREE.BufferAttribute( vertices, 3 ) );
 var material = new THREE.MeshBasicMaterial( { color: 0xff00aa } );
 var mesh = new THREE.Mesh( geometry, material );
 
-scene.add(mesh);
-
+// scene.add(mesh);
 
 var boxgeometry = new THREE.CubeGeometry(100, 100, 100);
 var boxmaterial = new THREE.MeshLambertMaterial({
@@ -193,7 +217,9 @@ function animate() {
 	requestAnimationFrame(animate);
 	render();
 }
+function renderTxture(){
 
+}
 function render() {
 	camera.lookAt(scene.position);
 	stats.begin();

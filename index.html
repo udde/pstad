@@ -167,50 +167,101 @@
 		/* ------------- */
 		/* ------------- */
 
+		float setHeight(vec2 p, inout float vh, inout float snow){
+			float height = 1.0 * snoise(0.002*vec2(0.4*p.x, 0.9*p.y));
+			height = height > 0.5 ? height* (1.0 + 2.0 * height* height * height) : height;
+			height += 0.5 * snoise(0.004*p);
+			height += 0.25 * snoise(0.008*p);
+
+			float waterNoise = 0.25 * snoise(2.0*p);
+			waterNoise += 0.125 * snoise(4.0*p);
+			waterNoise += 0.0625 * snoise(8.0*p);
+			waterNoise *= 1.0;
+			waterNoise = min(waterNoise, 0.0);
+
+			float mountainNoise = 1.0 ; //* snoise(0.002*vec2(0.4*p.x, 0.9*p.y));
+
+			// mountainNoise += 0.5 * snoise(2.0*p);
+			// mountainNoise += 0.25 * snoise(4.0*p);
+			// height = snoise(vec2(0.9*uv.x,1.4*uv.y));
+			// height += 0.5 * snoise(2.0*uv);
+			// height += 0.25 * snoise(4.0*uv);
+			mountainNoise = height;
+			height = max(-0.3,height);
+			height = min(height, 0.5);
+			vh = height;
+			height = height < 0.5 ? height  :  mountainNoise;// + 0.0 + mountainNoise;
+			height = height > -0.3 ? height : -1.0 + waterNoise;
+			mountainNoise = height;
+			height = min(height, 2.0);
+			snow = height;
+			height = height < 2.0 ? height  : mountainNoise;
+			height *= 100.0;
+			return height;
+		}
+		vec3 newNormal(vec3 p, float step){
+			//add normals of 6 sourounding polygons
+			float tmp = 0.0;
+			vec3 v0 = vec3(p.x + step, p.y, p.z );
+			v0.z += setHeight(v0.xy, tmp, tmp);
+			vec3 v1 = vec3(p.x + step, p.y + step, p.z );
+			v1.z += setHeight(v1.xy, tmp, tmp);
+			vec3 v2 = vec3(p.x, p.y + step, p.z );
+			v2.z += setHeight(v2.xy, tmp, tmp);
+			vec3 v3 = vec3(p.x - step, p.y, p.z );
+			v3.z += setHeight(v3.xy, tmp, tmp);
+			vec3 v4 = vec3(p.x - step, p.y - step, p.z );
+			v4.z += setHeight(v4.xy, tmp, tmp);
+			vec3 v5 = vec3(p.x , p.y - step, p.z );
+			v5.z += setHeight(v5.xy, tmp, tmp);
+
+			vec3 n0 = cross(v0 - p, v1 - p);
+			vec3 n1 = cross(v1 - p, v2 - p);
+			vec3 n2 = cross(v2 - p, v3 - p);
+			vec3 n3 = cross(v3 - p, v4 - p);
+			vec3 n4 = cross(v4 - p, v5 - p);
+			vec3 n5 = cross(v5 - p, v0 - p);
+
+			return normalize(n0+n1+n2+n3+n4+n5);
+		}
+
 		uniform vec3 uLight;
 		uniform vec3 uCamera;
+		uniform float uPlaneSegmentsSize;
 		varying vec3 vPos;
 		varying vec3 vNormal ;
 		varying vec2 vUv ;
 		varying float vHeight;
+		varying float vSnow;
 
 		varying vec3 vColor;
 
 		varying vec3 vViewPosition;
 
 		void main() {
-			vec3 p = vec3(position[0], position[1], position[2]);
-			vPos = p;
+			vec2 p = position.xy;//vec3(position[0], position[1], position[2]);
+			vPos = position;
 			vUv = uv;
 			vColor = vec3(1.0, 0.5, 0.4);
+			float step = uPlaneSegmentsSize;
 			// vViewPosition = - mvPosition.xyz;
 
-			float height = 0.5*snoise(1.0*vec2(0.5*p.x, 1.3*p.y));
-			height += 0.15 * snoise(2.0*p);
-			height += 0.125 * snoise(4.0*p);
-
-			float waterNoise = 0.5 * snoise(2.0*uv);
-			waterNoise += 0.25 * snoise(4.0*uv);
-			waterNoise += 0.125 * snoise(8.0*uv);
-			//waterNoise = min(waterNoise, 0.0);
-
-			height = snoise(uv);
-			height += 0.5 * snoise(2.0*uv);
-			height += 0.25 * snoise(4.0*uv);
-			height = max( -0.3,height);
 
 
-			vHeight = height; //send
-			height *= 100.0;
-			height = height > -0.3 ? height : 40.0*(-0.3 + waterNoise);
+			float height = setHeight(p, vHeight, vSnow);
+			vNormal  = newNormal(position, step);
 
+			// vHeight = height; //send
+
+			// height = height > -0.5 ? height : -1.2;// + waterNoise;
 
 			// height += 0.5;
 
 
-			vec3 newPosition = position + normal * height;
+			vec3 newPosition = position;
+			newPosition.z += height + 50.0;
+
 			vPos = newPosition;
-			vNormal  = normal;
 			gl_Position = projectionMatrix * modelViewMatrix * vec4(newPosition, 1.0);
 		}
 		</script>
@@ -389,6 +440,7 @@
 			varying vec3 vNormal;
 			varying vec2 vUv ;
 			varying float vHeight;
+			varying float vSnow;
 
 			varying vec3 vColor;
 
@@ -398,8 +450,12 @@
 				vec3 red = vec3(0.8,0.1,0.1);
 				vec3 blue = vec3(0.2, 0.6, 0.9);
 				vec3 green = vec3(0.1, 0.9, 0.1);
-				vec3 white = vec3(0.9,0.9,0.9);
-				vec3 brown = vec3(152,108,50)/255.0;
+				vec3 white = vec3(0.91,0.95,0.95);
+				vec3 brown = vec3(252,198,120)/255.0;
+				vec3 dark = vec3(93.0,69.0,47.0)/255.0;
+
+				// brown += snoise(0.4*vec2(vPos.x,0.2*vPos.y)) * dark;
+
 				vec3 c = red;
 				c += sin(100.0*vUv.x) * blue;
 				c += sin(100.0*vUv.y) * green;
@@ -420,36 +476,54 @@
 				// vec3 l = normalize(vec3(0.0,3.0,10.0));
 				vec3 l = normalize(uLight);
 
+				c = vHeight > -0.3 ? green : brown;
+				c = vHeight < 0.5 ? c : dark;
+				c = vSnow < 2.0 ? c : white;
+				vec3 ambient = 0.2 * c;
+
+				//polygon flat normal
 				vec3 fdx = normalize(dFdx( uCamera - vPos ));
 				vec3 fdy = normalize(dFdy( uCamera - vPos ));
 				vec3 nn = normalize( cross( fdx, fdy ) );
 
+				float kd = 0.7 * clamp(dot(nn, l), 0.0, 1.0);
+				float kd2 = 0.0 * clamp(dot(n, l), 0.0, 1.0);
+				vec3 diffuse =  (kd + kd2) * c;
+
 				// blue = blue + 0.125*snoise(100.0*vec2(0.1*vUv.x, vUv.y));
 
-				c = vHeight > -0.3 ? green : blue;
 
-				float dp = clamp(dot(nn, l), 0.0, 1.0);
-				gl_FragColor = vec4(dp * c, 1.0);
+				// r = 2n(n*l) - l
+				vec3 r = normalize(2.0*nn*(dot(nn,l)) - l);
+				vec3 v = normalize(uCamera - vPos);
+				float ks = 0.1 * pow(dot(r,v),8.0);
+				//ks * (r*v)^a
+				vec3 spec = ks * (vec3(1.0,1.0,1.0) + c);
+				spec = vHeight < 0.5 ? spec * 0.1 : spec;
+				spec = vSnow < 2.0 ? spec : 2.0 * spec;
+				// c = ambient + diffuse;// + spec;
+				c = ambient + diffuse + spec;
+				gl_FragColor = vec4(c, 1.0);
 			}
 			</script>
-			<div id="log">
-				<h5>log:</h5>
-			</div>
-			<style>
-			#log{
-				background: #aaa;
-			}
-			#log > *{
-				display: inline-block;
-				padding: 0px;
-				margin: 0px 0px 0px 2px;
-			}
-			</style>
-			<script src="js/jquery.min.js"></script>
-			<script src="js/three.min.js"></script>
-			<script src="js/orbitControls.min.js"></script>
-			<script src="js/stats.js"></script>
-			<script src="js/shaderLoader.js"></script>
-			<script src="main.js"></script>
-		</body>
-		</html>
+			<!-- <div id="log">
+			<h5>log:</h5>
+		</div>
+		<style>
+		#log{
+		background: #aaa;
+	}
+	#log > *{
+	display: inline-block;
+	padding: 0px;
+	margin: 0px 0px 0px 2px;
+}
+</style> -->
+<script src="js/jquery.min.js"></script>
+<script src="js/three.min.js"></script>
+<script src="js/orbitControls.min.js"></script>
+<script src="js/stats.js"></script>
+<script src="js/shaderLoader.js"></script>
+<script src="main.js"></script>
+</body>
+</html>
