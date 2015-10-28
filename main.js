@@ -68,7 +68,7 @@ function init() {
 	light.shadowDarkness = 0.2;
 
 	scene.add(light);
-	scene.add( new THREE.DirectionalLightHelper(light, 100.0) );
+	//scene.add( new THREE.DirectionalLightHelper(light, 100.0) );
 
 	var groundMaterial = new THREE.MeshPhongMaterial({
 		color: 0x6C6C6C
@@ -89,32 +89,13 @@ function init() {
 var flatMaterial = new THREE.MeshPhongMaterial({shading: THREE.FlatShading});
 
 plane = new THREE.Mesh(new THREE.PlaneGeometry(800, 600, 1*16, 1*12), shaderMaterial);
-// debugger;
-// plane.rotation.x = -Math.PI / 2;
+
 plane.receiveShadow = true;
-
 scene.add(plane);
-// debugger;
-var material = new THREE.LineBasicMaterial({
-	color: 0x0000ff
-});
-
-var geometry = new THREE.Geometry();
-geometry.vertices.push(
-	new THREE.Vector3( 0, 0, 10 ),
-	new THREE.Vector3( 10, 0, 10 ),
-	new THREE.Vector3( 20, 0, 10 ),
-	new THREE.Vector3( 30, 0, 10 ),
-	new THREE.Vector3( 40, 0, 10 ),
-	new THREE.Vector3( 50, 0, 10 ),
-	new THREE.Vector3( 60, 0, 10 )
-);
-
-var line = new THREE.Line( geometry, shaderMaterial );
-// scene.add( line );
-
 
 water = new THREE.Mesh(new THREE.PlaneGeometry(800, 600, 32, 24),new THREE.MeshPhongMaterial( { color: 0x77bbee, shading: THREE.FlatShading } ));
+water.material.transparent = true;
+water.material.opacity = 0.5;
 scene.add(water);
 
 
@@ -127,66 +108,25 @@ console.log(ns);
 var groundVertices = plane.geometry.vertices;
 console.log(groundVertices);
 
-var geometry = new THREE.BufferGeometry();
-var vertexPositions = [
-	[-1.0, -1.0,  1.0],
-	[ 1.0, -1.0,  -1.0],
-	[ 1.0,  1.0,  1.0],
+var geometry = new THREE.SphereGeometry(800, 60, 40);
+var uniforms = {
+  //texture: { type: 't', value: loadTexture('../pek.png') }
+};
 
-	[ 1.0,  1.0,  1.0],
-	[-1.0,  1.0,  1.0],
-	[-1.0, -1.0,  1.0]
-];
-var vertices = new Float32Array( vertexPositions.length * 3 ); // three components per vertex
-// var normals = new Float32Array( vertexPositions.length * 3 ); // three components per vertex
-
-// var c3 = new THREE.Vector3();
-// var j = 0;
-// for(var i = 0; i < vertexPositions.length - 2; i+=3){
-// 	// var a = new THREE.Vector3(vertexPositions[i][0],vertexPositions[i][1],vertexPositions[i][2]);
-// 	// var b = new THREE.Vector3(vertexPositions[i+1][0],vertexPositions[i+1][1],vertexPositions[i+1][2]);
-// 	// var c = new THREE.Vector3(vertexPositions[i+2][0],vertexPositions[i+2][1],vertexPositions[i+2][2]);
-//
-// 	// if(i%3 == 0){
-// 	// 	var c1 = new THREE.Vector3();
-// 	// 	c1.subVectors(a,b);
-// 	// 	var c2 = new THREE.Vector3();
-// 	// 	c2.subVectors(c,b);
-// 	// 	c3.crossVectors(c1,c2);
-// 	// }
-// 	//
-// 	//
-// 	// normals[ i*3 + 0 ] = c3.x;
-// 	// normals[ i*3 + 1 ] = c3.y;
-// 	// normals[ i*3 + 2 ] = c3.z;
-// }
-// console.log(normals);
-for ( var i = 0; i < vertexPositions.length; i++ )
-{
-	vertices[ i*3 + 0 ] = vertexPositions[i][0];
-	vertices[ i*3 + 1 ] = vertexPositions[i][1];
-	vertices[ i*3 + 2 ] = vertexPositions[i][2];
-}
-geometry.addAttribute( 'position', new THREE.BufferAttribute( vertices, 3 ) );
-var material = new THREE.MeshBasicMaterial( { color: 0xff00aa } );
-var mesh = new THREE.Mesh( geometry, material );
-
-// scene.add(mesh);
-
-var boxgeometry = new THREE.CubeGeometry(100, 100, 100);
-var boxmaterial = new THREE.MeshLambertMaterial({
-	color: 0x0aeedf
+var material = new THREE.ShaderMaterial( {
+  //uniforms:       uniforms,
+  //vertexShader:   document.getElementById('sky-vertex').textContent,
+  //fragmentShader: document.getElementById('sky-fragment').textContent
 });
-var cube = new THREE.Mesh(boxgeometry, shaderMaterial);
-cube.castShadow = true;
-cube.position.x = 0;
-cube.position.y = 100;
-cube.position.z = 0;
 
-// scene.add(cube);
+skyBox = new THREE.Mesh(geometry, new THREE.MeshPhongMaterial( { color: 0x77ddee, shading: THREE.FlatShading } ));
+skyBox.scale.set(-1, 1, 1);
+skyBox.eulerOrder = 'XZY';
+skyBox.renderDepth = 1000.0;
+scene.add(skyBox);
 
 // RENDERER
-webglRenderer = new THREE.WebGLRenderer();
+webglRenderer = new THREE.WebGLRenderer({ antialias: true } );
 webglRenderer.setSize(SCREEN_WIDTH, SCREEN_HEIGHT);
 webglRenderer.domElement.style.position = "relative";
 webglRenderer.shadowMap.enabled = true;
