@@ -1,0 +1,31 @@
+{
+  "name": "pstad",
+  "version": "1.0.0",
+  "description": "simple version",
+  "main": "main.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/udde/pstad.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/udde/pstad/issues"
+  },
+  "homepage": "https://github.com/udde/pstad#readme",
+  "devDependencies": {
+    "browserify": "^12.0.1",
+    "browserify-shader": "^0.1.0",
+    "gl-mat4": "^1.1.4",
+    "glsl-noise": "0.0.0",
+    "glslify": "^2.3.1",
+    "gulp": "^3.9.0",
+    "gulp-browserify": "^0.5.1",
+    "three": "^0.73.0",
+    "three-glslify": "^2.0.1",
+    "three-shader-fxaa": "^3.0.0"
+  }
+}
