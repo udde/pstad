@@ -4,7 +4,7 @@ var gl       = require('gl-context')(canvas, animate)
 var glBuffer = require('gl-buffer')
 var mat4     = require('gl-mat4')
 var glslify  = require('glslify')
-var GLMatrix      = require('gl-matrix')
+// var GLMatrix      = require('gl-matrix')
 var createBuffer  = require('gl-buffer')
 var createVAO     = require('gl-vao')
 
