@@ -185,7 +185,9 @@ float snoise(vec3 v)
         vec3 brown = vec3(252,198,120)/255.0;
         vec3 dark = vec3(93.0,69.0,47.0)/255.0;
 
-        // brown += snoise(0.4*vec2(vPos.x,0.2*vPos.y)) * dark;
+
+
+        
 
         vec3 c = red;
         c += sin(100.0*vUv.x) * blue;

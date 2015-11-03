@@ -29,7 +29,7 @@ function init() {
 	camera = new THREE.PerspectiveCamera(30, window.innerWidth / window.innerHeight, 1, 100000);
 	camera.position.x = 10;
 	camera.position.y = 10;
-	camera.position.z = 3500;
+	camera.position.z = 1800;
 	camera.lookAt({
 		x: 0,
 		y: 0,
@@ -76,7 +76,7 @@ function init() {
 		fragmentShader: gfs(),
 	});
 
-	plane = new THREE.Mesh(new THREE.PlaneGeometry(2800, 2600, 2800/50, 2600/50), groundMaterial);
+	plane = new THREE.Mesh(new THREE.PlaneGeometry(800, 600, 800/50, 600/50), groundMaterial);
 
 	scene.add(plane);
 
@@ -96,7 +96,7 @@ function init() {
 	water = new THREE.Mesh(new THREE.PlaneGeometry(2800,2600,32,24), waterMaterial);
 	water.material.transparent = true;
 
-	scene.add(water);
+	// scene.add(water);
 
 	var flatMaterial = new THREE.MeshPhongMaterial({shading: THREE.FlatShading});
 
@@ -116,6 +116,30 @@ function init() {
 	webglRenderer.shadowMap.enabled = true;
 	webglRenderer.shadowMapSoft = true;
 
+
+	// MIRROR plane
+	var planeGeo = new THREE.PlaneBufferGeometry( 800,600,32,24);
+	groundMirror = new THREE.Mirror( webglRenderer, camera, { clipBias: 0.003,
+	textureWidth: SCREEN_WIDTH, textureHeight: SCREEN_HEIGHT, color: 0x777777 } );
+	groundMirror.material.transparent = true;
+	mirrorMesh = new THREE.Mesh( planeGeo, groundMirror.material );
+	mirrorMesh.add( groundMirror );
+	// mirrorMesh.rotateX( - Math.PI / 1 );
+	scene.add( mirrorMesh );
+
+	composer = new THREE.EffectComposer(webglRenderer);
+	var renderWorld = new THREE.RenderPass(scene, camera);
+	var toScreen = new THREE.ShaderPass(THREE.CopyShader);
+	toScreen.renderToScreen = true;
+	var fxaa = new THREE.ShaderPass(THREE.FXAAShader);
+	fxaa.uniforms.resolution.value.set(1 / (SCREEN_WIDTH), 1 / (SCREEN_HEIGHT));
+
+	composer.renderTarget1.stencilBuffer = true;
+	composer.renderTarget2.stencilBuffer = true;
+
+	composer.addPass(renderWorld);
+	composer.addPass(fxaa);
+	composer.addPass(toScreen);
 	container.appendChild(webglRenderer.domElement);
 	window.addEventListener('resize', onWindowResize, false);
 
@@ -147,9 +171,12 @@ function renderTxture(){
 function render() {
 	camera.lookAt(scene.position);
 	stats.begin();
-	stats.end();
 	water.material.uniforms.uTime.value += 1.0 / 100.0;
-	webglRenderer.render(scene, camera);
+	groundMirror.material.uniforms.time.value += 1.0 / 100.0;
+	groundMirror.render();
+	// webglRenderer.render(scene, camera);
+	composer.render();
+	stats.end();
 }
 
 },{"./shaders/groundFragmentShader.glsl":2,"./shaders/groundVertexShader.glsl":3,"./shaders/waterFragmentShader.glsl":4,"./shaders/waterVertexShader.glsl":5}],2:[function(require,module,exports){
@@ -341,7 +368,9 @@ module.exports = function parse(params){
 "        vec3 brown = vec3(252,198,120)/255.0; \n" +" \n" +
 "        vec3 dark = vec3(93.0,69.0,47.0)/255.0; \n" +" \n" +
 " \n" +" \n" +
-"        // brown += snoise(0.4*vec2(vPos.x,0.2*vPos.y)) * dark; \n" +" \n" +
+" \n" +" \n" +
+" \n" +" \n" +
+"         \n" +" \n" +
 " \n" +" \n" +
 "        vec3 c = red; \n" +" \n" +
 "        c += sin(100.0*vUv.x) * blue; \n" +" \n" +
