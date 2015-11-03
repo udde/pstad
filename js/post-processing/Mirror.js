@@ -49,8 +49,8 @@ THREE.ShaderLib[ 'mirror' ] = {
 			"x = clamp(x,0.0, 1.0);",
 			"//vec2 vUv = 0.01*vPos.xy;",
 
-			"gl_FragColor =  vec4(0.5*color.xyz, 0.5) + vec4(0.0, 0.2, 0.3, 0.0) + ",
-			 "+  vec4(vec3(0.1, 0.3, 0.5) * clamp(2.2*snoise(vec3(n*90.0*vUv.x, ni*110.0*vUv.y, 0.9*time)),0.6,0.8), 0.0);",
+			"gl_FragColor =  vec4(0.5*color.xyz, 0.5) + vec4(0.0, 0.3, 0.4, 0.1) + ",
+			 "+  vec4(vec3(0.1, 0.3, 0.5) * clamp(2.2*snoise(vec3(n*90.0*vUv.x, ni*110.0*vUv.y, 0.9*time)),0.0,0.2), 0.0);",
 
 		"}"
 

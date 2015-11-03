@@ -79,6 +79,8 @@ function init() {
 
 	scene.add(plane);
 
+
+
 	//WATER MATERIAL
 	uniforms =  {
 		uTime: {type: "f", value: 0.0 },
@@ -96,6 +98,18 @@ function init() {
 	water.material.transparent = true;
 
 	// scene.add(water);
+
+	var boxgeometry = new THREE.CubeGeometry(100, 100, 100);
+	var boxmaterial = new THREE.MeshLambertMaterial({
+		color: 0x771122
+	});
+	var cube = new THREE.Mesh(boxgeometry, boxmaterial);
+	cube.castShadow = true;
+	cube.position.x = 100;
+	cube.position.y = -100;
+	cube.position.z = 200;
+
+	scene.add(cube);
 
 	var flatMaterial = new THREE.MeshPhongMaterial({shading: THREE.FlatShading});
 
