@@ -1,11 +1,6 @@
 {
   "name": "pstad",
   "version": "1.0.0",
-  "browserify": {
-    "transform": [
-      "glslify"
-    ]
-  },
   "scripts": {
       "compile" : "browserify -t browserify-shader index.js > bundle.min.js"
   },
