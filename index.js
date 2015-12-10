@@ -5,17 +5,11 @@ createVAO       = require("gl-vao"),
 clearGL         = require('gl-clear'),
 mat4            = require('gl-mat4'),
 vec3            = require('gl-vec3'),
-//matrix          = require('gl-matrix'),
 createCamera    = require('orbit-camera');
 
 var shell = createGL({
 
 });
-// var camera = createCamera(
-//     [0, 0, 2],
-//     [0, 0, 0],
-//     [0, 1, 0]
-// );
 
 var clear = clearGL({
     color: [0.8, 0.9, 0.9, 1],
@@ -29,7 +23,7 @@ shell.on('gl-init', function() {
     gl.enable(gl.DEPTH_TEST);
     gl.enable(gl.CULL_FACE);
     gl.cullFace(gl.BACK);
-    console.log("okejsan hejsan");
+
     //camshit
     cam = mat4.create()
     eye = vec3.create()
@@ -62,7 +56,6 @@ shell.on('gl-init', function() {
 
 shell.on('gl-render', function(t) {
     var gl = shell.gl;
-    //clear the screen
     clear(gl);
 
     //draw the ground
@@ -77,7 +70,7 @@ shell.on('gl-render', function(t) {
     groundShader.uniforms.view = cam
 
     var model = mat4.create(), unityM = mat4.create();
-    levels = [1,0,0,0]
+    levels = [0,0,1,0]
     for (var j = 0; j < nBlocks; j++) {
         var i = j + 4*levels[j];
 
@@ -85,7 +78,7 @@ shell.on('gl-render', function(t) {
         mat4.translate(model, unityM, vec3.fromValues(ground.blocks[i].offset[0],ground.blocks[i].offset[1],ground.blocks[i].offset[2]) );
         groundShader.uniforms.model = model;
         ground.blocks[i].vao.bind();
-        ground.blocks[i].vao.draw(gl.LINES, ground.blocks[i].nvertices);
+        ground.blocks[i].vao.draw(gl.TRIANGLES, ground.blocks[i].nvertices);
         ground.blocks[i].vao.unbind();
     }
 

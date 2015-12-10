@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>stack.gl / learning-webgl-01</title>
+    <meta charset="UTF-8">
+    <title>stack.gl / learning-webgl-01</title>
 </head>
 <body>
 
@@ -11,8 +11,8 @@
     attribute vec3 position;
     varying vec2 uv;
     void main() {
-      gl_Position = vec4(position, 1.0);
-      uv = position.xy;
+        gl_Position = vec4(position, 1.0);
+        uv = position.xy;
     }
 
     </script>
@@ -23,12 +23,12 @@
     varying vec2 uv;
 
     void main() {
-      gl_FragColor = vec4(0.5*(uv+1.0), 0.5*(cos(t)+1.0), 1.0);
+        gl_FragColor = vec4(0.5*(uv+1.0), 0.5*(cos(t)+1.0), 1.0);
     }
-
     </script>
-
-  <script charset="utf-8" src="bundle.min.js"></script>
-  <!-- <script type="text/javascript" src="example.js"></script> -->
+    
+    <script type="text/javascript" src="patch.js"></script>
+    <script charset="utf-8" src="bundle.min.js"></script>
+    <!-- <script type="text/javascript" src="example.js"></script> -->
 </body>
 </html>
