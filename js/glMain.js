@@ -16,7 +16,7 @@ var clear = clearGL({
 });
 
 var meshes, ground, groundShader, cam, eye, target, up, camUp, camRight, camToTarget;
-var nBlocks, nLevels, blocks, levels = [0,0,0,0];
+var nBlocks, nLevels, blocks, levels = [0,0,0,0], landscape;
 
 shell.on('gl-init', function() {
     var gl = shell.gl;
@@ -49,7 +49,9 @@ shell.on('gl-init', function() {
     ground = require('./terrainDataGenerator.js')(gl);
     nLevels = ground.nLevels;
     nBlocks = ground.nBlocks;
-    ground.skriv();
+    heightMap = ground.heightMap;
+
+    landscape = new Landscape();
 
     groundShader.attributes.aPosition.location = 0;
     groundShader.attributes.aColor.location = 1;

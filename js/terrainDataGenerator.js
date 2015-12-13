@@ -25,7 +25,7 @@ function init(gl) {
     meshes.nBlocks = blocks.x * blocks.y;
     meshes.nLevels = levels;
     meshes.blocks = meshBlocks;
-    meshes.skriv = function() { console.log("skrver"); }
+    meshes.heightMap = generateHeightMap(6);
     return meshes;
 }
 
