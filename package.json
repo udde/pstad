@@ -2,7 +2,7 @@
   "name": "pstad",
   "version": "1.0.0",
   "scripts": {
-      "compile" : "browserify -t browserify-shader index.js > bundle.min.js"
+    "compile": "browserify -t browserify-shader glMain.js > app.js"
   },
   "dependencies": {
     "canvas-fit": "^1.2.0",
@@ -21,7 +21,11 @@
   "devDependencies": {
     "browserify": "^8.0.3",
     "browserify-shader": "^0.1.2",
+    "gulp": "^3.9.0",
+    "gulp-concat": "^2.6.0",
     "uglify-js": "^2.4.16",
+    "vinyl-source-stream": "^1.1.0",
+    "watchify": "^3.6.1",
     "wzrd": "^1.1.0"
   }
 }

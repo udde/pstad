@@ -9,12 +9,12 @@ function init(gl) {
 
     //test 2 levels
     // var t1 = window.performance.now();
-    var bigres = 3;
-    var bigsize = math.pow(2,bigres);
-    var res = 3;
+    var bigRes = 3;
+    var bigize = math.pow(2,bigRes);
+    var levels = 2;
+    var res = 4;
     var size = math.pow(2,res);
     var blocks = {x : 2, y : 2};
-    var levels = 2;
     var meshBlocks = [];
     // var j = 0, k = 0;
     for(var i = 0; i < levels; i++)
@@ -25,44 +25,63 @@ function init(gl) {
     meshes.nBlocks = blocks.x * blocks.y;
     meshes.nLevels = levels;
     meshes.blocks = meshBlocks;
+    meshes.skriv = function() { console.log("skrver"); }
     return meshes;
 }
 
+function generateHeightMap(res)
+{
+    var mapWidth = math.pow(2,res)
+    var heightMap = new Float32Array(mapWidth*mapWidth);
+    for(var i = 0; i < mapWidth; i++)
+    for(var j = 0; j < mapWidth; j++)
+    {
+        heightMap[i*mapWidth + j] = getHeight(j, i);
+    }
+
+    return heightMap;
+}
+
+
+
 function generateMesh(gl, lodLevel, res, offsetx, offsety) {
     //res = storleken i "meter", lodLevel = upplösningen, "antal trianglar per meter"
-    var grid_res_x = math.pow(2,res+(lodLevel -1)), grid_res_y = math.pow(2,res+(lodLevel -1));
-    var xscale = 1/lodLevel, yscale = 1/lodLevel;
-    var total_square_size = 18;
-    var total_data_size = total_square_size * grid_res_x * grid_res_y + (2*(grid_res_x * grid_res_y) + 4) * 9;
+    var gridResX = math.pow(2,res+(lodLevel -1)), gridResY = math.pow(2,res+(lodLevel -1));
+    var xScale = 1/lodLevel, yScale = 1/lodLevel;
+    var totalSquareSize = 18;
+    var totalDataSize = totalSquareSize * gridResX * gridResY + (2*(gridResX * gridResY) + 4) * 9;
 
-    var nvertices = total_square_size * grid_res_x * grid_res_y / 3;
-    var aPositionData = new Float32Array(total_data_size);
-    var aNormalData = new Float32Array(total_data_size);
-    var aTriangleHeightData = new Float32Array(nvertices);
+    var nVertices = totalSquareSize * gridResX * gridResY / 3;
+    var aPositionData = new Float32Array(totalDataSize);
+    var aNormalData = new Float32Array(totalDataSize);
+    var aTriangleHeightData = new Float32Array(nVertices);
     var triangleHeightDataPos = 0;
+    var maxHeight = getHeight(1,1,1);
+    // console.log(maxHeight);
     var i = 0;
 
-    var xh = (grid_res_x % 2 == 0) ? grid_res_x / 2 : (grid_res_x - 1) / 2 ;
-    var yh = (grid_res_y % 2 == 0) ? grid_res_y / 2 : (grid_res_y - 1) / 2 ;
+    var xh = (gridResX % 2 == 0) ? gridResX / 2 : (gridResX - 1) / 2 ;
+    var yh = (gridResY % 2 == 0) ? gridResY / 2 : (gridResY - 1) / 2 ;
     for (var X = -xh; X < xh; X++)
-    for (var Y = -yh; Y < yh; Y++, i += total_square_size) {
+    for (var Y = -yh; Y < yh; Y++, i += totalSquareSize) {
 
-        var x = X  * xscale;
-        var y = Y  * yscale;
+        var x = X  * xScale;
+        var y = Y  * yScale;
 
         aPositionData[i   ] = x
         aPositionData[i+2 ] = y
         aPositionData[i+1 ] = getHeight(aPositionData[i] + offsetx, aPositionData[i + 2] + offsety)
 
         aPositionData[i+3 ] = x
-        aPositionData[i+5 ] = y+yscale
+        aPositionData[i+5 ] = y+yScale
         aPositionData[i+4 ] = getHeight(aPositionData[i + 3] + offsetx, aPositionData[i + 5] + offsety)
 
-        aPositionData[i+6 ] = x+xscale
+        aPositionData[i+6 ] = x+xScale
         aPositionData[i+8 ] = y
         aPositionData[i+7 ] = getHeight(aPositionData[i + 6] + offsetx, aPositionData[i + 8] + offsety)
 
-        triangleHeight1 = ( aPositionData[i+1 ] + aPositionData[i+4] + aPositionData[i+7 ] ) / 3;
+        triangleHeight1 = ((( aPositionData[i+1 ] + aPositionData[i+4] + aPositionData[i+7 ] ) / 3 / maxHeight ) + 1)/2;
+        // console.log((triangleHeight1+1)/2);
 
         var normal1 = math.cross([
             aPositionData[i + 3] - aPositionData[i + 0],
@@ -74,29 +93,29 @@ function generateMesh(gl, lodLevel, res, offsetx, offsety) {
             aPositionData[i + 8] - aPositionData[i + 5]
         ]);
 
-
-        aPositionData[i+ 9] = x+xscale
+        aPositionData[i+ 9] = x+xScale
         aPositionData[i+11] = y
         aPositionData[i+10] = getHeight(aPositionData[i + 9] + offsetx, aPositionData[i + 11] + offsety)
 
         aPositionData[i+12] = x
-        aPositionData[i+14] = y+yscale
+        aPositionData[i+14] = y+yScale
         aPositionData[i+13] = getHeight(aPositionData[i + 12] + offsetx, aPositionData[i + 14] + offsety)
 
-        aPositionData[i+15] = x+xscale
-        aPositionData[i+17] = y+yscale
+        aPositionData[i+15] = x+xScale
+        aPositionData[i+17] = y+yScale
         aPositionData[i+16] = getHeight(aPositionData[i + 15] + offsetx, aPositionData[i + 17] + offsety)
 
-        tirangleHeight2 = ( aPositionData[i+10] + aPositionData[i+13] + aPositionData[i+16] ) / 3;
+        tirangleHeight2 = ((( aPositionData[i+10] + aPositionData[i+13] + aPositionData[i+16] ) / 3 / maxHeight ) +1 ) /2;
 
         // console.log(((tirangleHeight2/11.875) + 1)/2);
-        aTriangleHeightData[triangleHeightDataPos + 0] = ((triangleHeight1/11.875)+1)/2;
-        aTriangleHeightData[triangleHeightDataPos + 1] = ((triangleHeight1/11.875)+1)/2;
-        aTriangleHeightData[triangleHeightDataPos + 2] = ((triangleHeight1/11.875)+1)/2;
-        aTriangleHeightData[triangleHeightDataPos + 3] = ((tirangleHeight2/11.875)+1)/2;
-        aTriangleHeightData[triangleHeightDataPos + 4] = ((tirangleHeight2/11.875)+1)/2;
-        aTriangleHeightData[triangleHeightDataPos + 5] = ((tirangleHeight2/11.875)+1)/2;
+        aTriangleHeightData[triangleHeightDataPos + 0] = triangleHeight1;
+        aTriangleHeightData[triangleHeightDataPos + 1] = triangleHeight1;
+        aTriangleHeightData[triangleHeightDataPos + 2] = triangleHeight1;
+        aTriangleHeightData[triangleHeightDataPos + 3] = tirangleHeight2;
+        aTriangleHeightData[triangleHeightDataPos + 4] = tirangleHeight2;
+        aTriangleHeightData[triangleHeightDataPos + 5] = tirangleHeight2;
         triangleHeightDataPos += 6;
+
         //calc the second normal
         var normal2 = math.cross([
             aPositionData[i + 12] - aPositionData[i +  9],
@@ -109,7 +128,7 @@ function generateMesh(gl, lodLevel, res, offsetx, offsety) {
         ]);
 
         // //fill the normal data-array with the 2 normals
-        for (var ii = 0; ii < total_square_size; ii += 3) {
+        for (var ii = 0; ii < totalSquareSize; ii += 3) {
             if ( ii < 9 ) {
                 aNormalData[ii + i + 0] = normal1[0];
                 aNormalData[ii + i + 1] = normal1[1];
@@ -121,7 +140,6 @@ function generateMesh(gl, lodLevel, res, offsetx, offsety) {
                 aNormalData[ii + i + 2] = normal2[2];
             }
         }
-
     }
     // var t2 = window.performance.now();
     buffer2 = createBuffer(gl, aPositionData);
@@ -166,44 +184,57 @@ function generateMesh(gl, lodLevel, res, offsetx, offsety) {
 
     return {
         vao: vao,
-        nvertices: nvertices,
+        nVertices: nVertices,
         offset: [offsetx, 0.0, offsety]
     };
 
 }
 
-var simplexNoise    = require('../simplex-noise-med-stegu');
+
+var simplexNoise    = require('./simplexNoiseImproved.js');
 var simplex = new simplexNoise();
 
-function getHeight(x ,y)
+function getHeight(x ,y, getMax)
 {
-    max = 1;
     // var height = 1.0 * simplex.noise2D(0.00116*0.4*x, 0.00116*0.9*y);
     d = math.sqrt( x * x  +  y * y );
-    el = 1 / (0.05*d + 1)
     // height = 5*el;
-    var f = 0.125/4;
-    var s = 3.0;
-    height = s * simplex.noise2D(f*x,f*y);
-    // console.log(height);
 
+    var f = 0.125 / 8;
+    var s = 2.0 * 2;
+    height = s * simplex.noise2D(f*x,f*y);
+    var max = s;
     s = s/2;
     f = f*2;
     height += s * simplex.noise2D(f*x, f*y);
+    max += s;
     // if(height)
     // height *= (0.5*height);
-    height = height > 0.5 ? height * (1.6 +  math.pow(height/4.5, 3.0))
-    : height;
+    height =  height > 0.0 ? height * (math.pow(height, 0.5)) : height *0.8;
+    max = max * math.pow(max, 0.5);
 
-    for (var i = 0; i < 5; i++) {
-        max += s
+    for (var i = 0; i < 2; i++) {
         s = s/2;
         f = f*2;
+        max += s;
         height += s * simplex.noise2D(f*x, f*y);
     }
-    if(height > 3)
-        height *= (height/5.5);
 
+    if(height > 0.0)
+        height *= 1.3;
+    else
+        height *= 1.0;
+    max *= 1.3;
+
+    // if(height > 6.0)
+        // height += 0.1*height
+
+    for (var i = 0; i < 2; i++) {
+        s = s/2;
+        f = f*2;
+        max += s;
+        height += s * simplex.noise2D(f*x, f*y);
+    }
 
     // var waterNoise = 0.25 * simplex.noise2D(2.0*x,2.0*y);
     // waterNoise += 0.125 * simplex.noise2D(4.0*x,4.0*y);
@@ -227,13 +258,16 @@ function getHeight(x ,y)
     // height *= 1.0;
     // max*=1;
     // console.log(max); //11.875
+    // console.log(max);
+    if(getMax)
+        return max;
     return height;
 }
 // function createMesh(xoffset, yoffset) {
 //     grid_res = { x: 4, y: 4 };
 //     var count = grid_res.x * grid_res.y;
-//     var total_square_size = 18; //3x3x2 floats for 2 triangles points
-//     var size = count * total_square_size;
+//     var totalSquareSize = 18; //3x3x2 floats for 2 triangles points
+//     var size = count * totalSquareSize;
 //
 //     var aPositionData = new Float32Array(size);
 //     var aColorData = new Float32Array(size);
@@ -244,24 +278,24 @@ function getHeight(x ,y)
 //     xoffset = xoffset || 0;
 //     yoffset = yoffset || 0;
 //     //size scale
-//     var xscale = 0.1;
-//     var yscale = 0.1;
+//     var xScale = 0.1;
+//     var yScale = 0.1;
 //
 //     var i = 0;
 //     for (var X = 0; X < grid_res.x; X++)
-//     for (var Y = 0; Y < grid_res.y; Y++, i += total_square_size) {
-//         var x = X * xscale + xoffset * xscale;
-//         var y = Y * yscale + yoffset * yscale;
+//     for (var Y = 0; Y < grid_res.y; Y++, i += totalSquareSize) {
+//         var x = X * xScale + xoffset * xScale;
+//         var y = Y * yScale + yoffset * yScale;
 //
 //         // Triangle 1
-//         aPositionData[i   ] = x+xscale
+//         aPositionData[i   ] = x+xScale
 //         aPositionData[i+1 ] = y
 //         aPositionData[i+2 ] = getHeight(aPositionData[i], aPositionData[i + 1])
 //         aPositionData[i+3 ] = x
 //         aPositionData[i+4 ] = y
 //         aPositionData[i+5 ] = getHeight(aPositionData[i + 3], aPositionData[i + 4])
 //         aPositionData[i+6 ] = x
-//         aPositionData[i+7 ] = y+yscale
+//         aPositionData[i+7 ] = y+yScale
 //         aPositionData[i+8 ] = getHeight(aPositionData[i + 6], aPositionData[i + 7])
 //
 //         var normal1 = math.cross([
@@ -276,14 +310,14 @@ function getHeight(x ,y)
 //
 //         // Triangle 2
 //         aPositionData[i+9 ] = x
-//         aPositionData[i+10] = y+yscale
+//         aPositionData[i+10] = y+yScale
 //         aPositionData[i+11] = getHeight(aPositionData[i + 9], aPositionData[i + 10])
 //
-//         aPositionData[i+12] = x+xscale
-//         aPositionData[i+13] = y+yscale
+//         aPositionData[i+12] = x+xScale
+//         aPositionData[i+13] = y+yScale
 //         aPositionData[i+14] = getHeight(aPositionData[i + 12], aPositionData[i + 13])
 //
-//         aPositionData[i+15] = x+xscale
+//         aPositionData[i+15] = x+xScale
 //         aPositionData[i+16] = y
 //         aPositionData[i+17] = getHeight(aPositionData[i + 15], aPositionData[i + 16])
 //
@@ -299,7 +333,7 @@ function getHeight(x ,y)
 //         ]);
 //
 //         //fill the normal data-array with the 2 normals
-//         for (var i = 0; i < total_square_size; i += 3) {
+//         for (var i = 0; i < totalSquareSize; i += 3) {
 //             if ( i < 9 ) {
 //                 aNormalData[i    ] = normal1[0];
 //                 aNormalData[i + 1] = normal1[1];
@@ -315,7 +349,7 @@ function getHeight(x ,y)
 //         var color1 = [ 0.9 , 0.5, 0.5 ];
 //         var color2 = [ 0.5 , 0.5, 0.9 ];
 //
-//         for (var i = 0; i < total_square_size; i += 3) {
+//         for (var i = 0; i < totalSquareSize; i += 3) {
 //             if ( i < 9 ) {
 //                 aColorData[i    ] = color1[0];
 //                 aColorData[i + 1] = color1[1];
@@ -329,18 +363,18 @@ function getHeight(x ,y)
 //         }
 //
 //
-//         // aVertex1Data[i   ] = x+xscale
+//         // aVertex1Data[i   ] = x+xScale
 //         // aVertex1Data[i+1 ] = y
-//         // aVertex1Data[i+2 ] = x+xscale
+//         // aVertex1Data[i+2 ] = x+xScale
 //         // aVertex1Data[i+3 ] = y
-//         // aVertex1Data[i+4 ] = x+xscale
+//         // aVertex1Data[i+4 ] = x+xScale
 //         // aVertex1Data[i+5 ] = y
 //         // aVertex1Data[i+6 ] = x
-//         // aVertex1Data[i+7 ] = y+yscale
+//         // aVertex1Data[i+7 ] = y+yScale
 //         // aVertex1Data[i+8 ] = x
-//         // aVertex1Data[i+9 ] = y+yscale
+//         // aVertex1Data[i+9 ] = y+yScale
 //         // aVertex1Data[i+10] = x
-//         // aVertex1Data[i+11] = y+yscale
+//         // aVertex1Data[i+11] = y+yScale
 //         //
 //         // aVertex2Data[i   ] = x
 //         // aVertex2Data[i+1 ] = y
@@ -348,24 +382,24 @@ function getHeight(x ,y)
 //         // aVertex2Data[i+3 ] = y
 //         // aVertex2Data[i+4 ] = x
 //         // aVertex2Data[i+5 ] = y
-//         // aVertex2Data[i+6 ] = x+xscale
-//         // aVertex2Data[i+7 ] = y+yscale
-//         // aVertex2Data[i+8 ] = x+xscale
-//         // aVertex2Data[i+9 ] = y+yscale
-//         // aVertex2Data[i+10] = x+xscale
-//         // aVertex2Data[i+11] = y+yscale
+//         // aVertex2Data[i+6 ] = x+xScale
+//         // aVertex2Data[i+7 ] = y+yScale
+//         // aVertex2Data[i+8 ] = x+xScale
+//         // aVertex2Data[i+9 ] = y+yScale
+//         // aVertex2Data[i+10] = x+xScale
+//         // aVertex2Data[i+11] = y+yScale
 //         //
 //         // aVertex3Data[i   ] = x
-//         // aVertex3Data[i+1 ] = y+yscale
+//         // aVertex3Data[i+1 ] = y+yScale
 //         // aVertex3Data[i+2 ] = x
-//         // aVertex3Data[i+3 ] = y+yscale
+//         // aVertex3Data[i+3 ] = y+yScale
 //         // aVertex3Data[i+4 ] = x
-//         // aVertex3Data[i+5 ] = y+yscale
-//         // aVertex3Data[i+6 ] = x+xscale
+//         // aVertex3Data[i+5 ] = y+yScale
+//         // aVertex3Data[i+6 ] = x+xScale
 //         // aVertex3Data[i+7 ] = y
-//         // aVertex3Data[i+8 ] = x+xscale
+//         // aVertex3Data[i+8 ] = x+xScale
 //         // aVertex3Data[i+9 ] = y
-//         // aVertex3Data[i+10] = x+xscale
+//         // aVertex3Data[i+10] = x+xScale
 //         // aVertex3Data[i+11] = y
 //     }
 //
