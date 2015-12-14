@@ -19,9 +19,7 @@ GLOBAL_DATA = {
 
 }
 
-
-
-
+//struct-like class for trinodes
 var TriTreeNode = function ()
 {
     this.leftChild    = NULL;
@@ -31,18 +29,9 @@ var TriTreeNode = function ()
     this.baseNeighbor = NULL;
 }
 
-var Patch = function( camera )
-{
-    this.camera = camera;
-
-    this.varianceTreeLeft  = new Uint8Array(1<<(GLOBAL_DATA.varianceDepth));
-    this.varianceTreeRight = new Uint8Array(1<<(GLOBAL_DATA.varianceDepth));
-}
-
-Patch.prototype.init = function( offsetX, offsetY, worldX, worldY, heightMap)
+var Patch = function( heightMap, mapConsts ,offsetX, offsetY, worldX, worldY, camera )
 {
     //clear all relationship
-
     this.baseLeft  = new TriTreeNode();
     this.baseRight = new TriTreeNode();
 
@@ -53,8 +42,7 @@ Patch.prototype.init = function( offsetX, offsetY, worldX, worldY, heightMap)
     //store patch offsets for world and height map
     this.worldX = worldX;
     this.worldY = worldY;
-    // heightX = heightX
-    // heightY = heightY
+
     this.localHeightStartIdx = offsetY * GLOBAL_DATA.mapWidth + offsetX;
     this.heightMap = heightMap;
 
@@ -64,6 +52,11 @@ Patch.prototype.init = function( offsetX, offsetY, worldX, worldY, heightMap)
     // Which varience we are currently using.
     // [Only valid during the Tessellate and ComputeVariance passes]
     this.currentVariance = NULL;
+
+    this.camera = camera;
+
+    this.varianceTreeLeft  = new Uint8Array(1<<(GLOBAL_DATA.varianceDepth));
+    this.varianceTreeRight = new Uint8Array(1<<(GLOBAL_DATA.varianceDepth));
 }
 
 Patch.prototype.reset = function()
@@ -356,13 +349,100 @@ Patch.prototype.recursiveRender = function(tri, leftX, leftY, rightX, rightY, ap
 }
 
 //LANDSCAPE
-var Landscape = function()
+var Landscape = function(heightMap, mapWidth, nPatchesPerSide, scale, camera, worldPosition )
 {
+    //Constants
+    this.mapConsts.mapWidth = mapWidth;
+    this.mapConsts.nPatchesPerSide = nPatchesPerSide;
+    this.mapConsts.patchWidth = this.mapWidth/this.nPatchesPerSide;
+    this.mapConsts.poolSize = 32768;
+    this.mapConsts.scale = scale;
+
+    //hardcoded
+    //depth of vaiance: tree should be close to sqrt(patchWidth)+1
+    this.mapConsts.varianceDepth = 9;
+    //beginnig fram variance, should be high
+    this.mapConsts.frameVariance = 50;
+    this.mapConsts.desiredTriangleTessellations = 10000;
+    this.mapConsts.nTrianglesRendered = 0;
+
+    this.nextTriNode = NULL;
+    this.nodePool = [];
+    for (var i = 0; i < this.mapConsts.poolSize; i++)
+        this.nodePool[i] = new TriTreeNode();
+
+    //instance variables
+    this.heightMap = heightMap;
+    this.camera = camera;
+    this.worldPosition = worldPosition;
+    this.patches = new Array(this.nPatchesPerSide);
+    this.nextTriNode = 0;
+
+
+    //create the patches in a 2d array
+    this.createPatches();
 
 
 }
 
-Landscape.prototype.allocateTri()
+Landscape.prototype.createPatches = function()
+{
+    for(var y = 0; y < this.nPatchesPerSide ; y++)
+    {
+        this.patches[i] = new Array(this.nPatchesPerSide);
+        for(var x = 0; x < this.nPatchesPerSide ; x++)
+        {
+            this.patches[y][x] = new Patch(this.heightMap, this.mapConsts, x*this.mapConsts.patchWidth,
+            y*this.mapConsts.mapWidth, worldPosition.x, worldPosition.z, this.camera );
+
+            this.patches[i][j].computeVariance();
+        }
+    }
+}
+
+Landscape.prototype.claimNextFreeNode = function()
+{
+    //check if run out of nodes
+    if(this.nextTriNode >= this.mapConsts.poolSize)
+        return NULL;
+
+    var node = this.nodePool[this.nextTriNode++];
+    node.leftChild = NULL;
+    node.rightChild = NULL;
+
+    return node;
+}
+
+Landscape.prototype.tessellate = function()
+{
+    //loop through all patches and call their tessellate method
+    for(var y = 0; y < this.mapConsts.nPatchesPerSide; y++)
+    for(var x = 0; x < this.mapConsts.nPatchesPerSide; x++)
+    {
+        if(this.patches[y][x].isVisible)
+        {
+            this.patches[y][x].tessellate();
+        }
+    }
+}
+
+Landscape.prototype.generateTriangleData = function()
+{
+    var totalData = { positions: [], normals: [] };
+
+    for(var y = 0; y < this.mapConsts.nPatchesPerSide; y++)
+    for(var x = 0; x < this.mapConsts.nPatchesPerSide; x++)
+    {
+        if(this.patches[y][x].isVisible)
+        {
+            var patchData = this.patches[y][x].render();
+            totalData.positions = totalData.positions.concat(patchData.positions);
+            totalData.normals = totalData.normals.concat(patchData.normals);
+        }
+    }
+}
+
+Landscape.prototype.reset = function()
 {
 
 }
@@ -407,7 +487,7 @@ var clear = clearGL({
 });
 
 var meshes, ground, groundShader, cam, eye, target, up, camUp, camRight, camToTarget;
-var nBlocks, nLevels, blocks, levels = [0,0,0,0];
+var nBlocks, nLevels, blocks, levels = [0,0,0,0], landscape;
 
 shell.on('gl-init', function() {
     var gl = shell.gl;
@@ -440,7 +520,9 @@ shell.on('gl-init', function() {
     ground = require('./terrainDataGenerator.js')(gl);
     nLevels = ground.nLevels;
     nBlocks = ground.nBlocks;
-    ground.skriv();
+    heightMap = ground.heightMap;
+
+    landscape = new Landscape();
 
     groundShader.attributes.aPosition.location = 0;
     groundShader.attributes.aColor.location = 1;

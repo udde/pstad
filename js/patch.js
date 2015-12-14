@@ -1,23 +1,5 @@
 var math = require('mathjs');
 
-GLOBAL_DATA = {
-    mapWidth: 64,
-    nPatchesPerSide: 1,
-    patchWidth: mapWidth/nPatchesPerSide,
-    poolSize: 32768,
-    // Scale of the terrain ie: 1 unit of the height map == how many world units (meters)?
-    // 1.0f == 1 meter resolution
-    // 0.5f == 1/2 meter resolution
-    // 0.25f == 1/4 meter resolution
-    scale: 0.5,
-    //depth of vaiance: tree should be close to sqrt(patchWidth)+1
-    varianceDepth: 9,
-    //beginnig fram variance, should be high
-    frameVariance: 50,
-    desiredTriangleTessellations: 10000,
-    nTrianglesRendered: 0,
-
-}
 
 //struct-like class for trinodes
 var TriTreeNode = function ()

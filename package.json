@@ -14,7 +14,6 @@
     "gl-shader": "^4.1.0",
     "gl-vao": "^1.2.1",
     "gl-vec3": "^1.0.3",
-    "glslify": "^1.6.0",
     "mathjs": "^2.5.0",
     "orbit-camera": "^1.0.0"
   },

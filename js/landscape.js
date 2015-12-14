@@ -37,10 +37,10 @@ var Landscape = function(heightMap, mapWidth, nPatchesPerSide, scale, camera, wo
 
 Landscape.prototype.createPatches = function()
 {
-    for(var y = 0; y <  ; y++)
+    for(var y = 0; y < this.nPatchesPerSide ; y++)
     {
         this.patches[i] = new Array(this.nPatchesPerSide);
-        for(var x = 0; x <  ; x++)
+        for(var x = 0; x < this.nPatchesPerSide ; x++)
         {
             this.patches[y][x] = new Patch(this.heightMap, this.mapConsts, x*this.mapConsts.patchWidth,
             y*this.mapConsts.mapWidth, worldPosition.x, worldPosition.z, this.camera );
