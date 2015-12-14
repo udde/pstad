@@ -25,13 +25,14 @@ function init(gl) {
     meshes.nBlocks = blocks.x * blocks.y;
     meshes.nLevels = levels;
     meshes.blocks = meshBlocks;
-    meshes.heightMap = generateHeightMap(6);
+    meshes.heightMap = generateHeightMap(9);
     return meshes;
 }
 
 function generateHeightMap(res)
 {
     var mapWidth = math.pow(2,res)
+    mapWidth = res
     var heightMap = new Float32Array(mapWidth*mapWidth);
     for(var i = 0; i < mapWidth; i++)
     for(var j = 0; j < mapWidth; j++)

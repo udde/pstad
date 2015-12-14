@@ -78,7 +78,7 @@ void main() {
     vec3 spec = ks * (vec3(1.0,1.0,1.0) + c);
 
     // gl_FragColor = vec4(0.01*(vUv+1.0), 0.5*(cos(t)+1.0), 1.0);
-    gl_FragColor.xyz = diffuse + ambient + spec;
+    gl_FragColor.xyz = vec3(1.0,0.0, 0.0);//diffuse + ambient + spec;
     gl_FragColor.a = 1.0;
 }
 

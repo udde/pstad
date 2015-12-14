@@ -16,7 +16,6 @@ function loadShaders(gl){
         require('../shaders/ground.vert')(),
         require('../shaders/ground.frag')()
     );
-
     return shaders;
 }
 

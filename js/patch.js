@@ -1,18 +1,11 @@
 var math = require('mathjs');
 
 
-//struct-like class for trinodes
-var TriTreeNode = function ()
-{
-    this.leftChild    = NULL;
-    this.rightChild   = NULL;
-    this.baseNeighbor = NULL;
-    this.leftNeighbor = NULL;
-    this.baseNeighbor = NULL;
-}
 
-var Patch = function( heightMap, mapConsts ,offsetX, offsetY, worldX, worldY, camera )
+
+var Patch = function( heightMap, mapConsts ,offsetX, offsetY, worldX, worldY, camera, memHandler )
 {
+    this.mapConsts = mapConsts;
     //clear all relationship
     this.baseLeft  = new TriTreeNode();
     this.baseRight = new TriTreeNode();
@@ -25,50 +18,56 @@ var Patch = function( heightMap, mapConsts ,offsetX, offsetY, worldX, worldY, ca
     this.worldX = worldX;
     this.worldY = worldY;
 
-    this.localHeightStartIdx = offsetY * GLOBAL_DATA.mapWidth + offsetX;
+    this.localHeightStartIdx = offsetY * this.mapConsts.mapWidth + offsetX;
+    this.patchWidth = this.mapConsts.mapWidth/this.mapConsts.nPatchesPerSide;
     this.heightMap = heightMap;
 
-    this.isVisible = false;
+    this.isVisible = true;
     this.isVarianceDirty = true;
 
     // Which varience we are currently using.
     // [Only valid during the Tessellate and ComputeVariance passes]
-    this.currentVariance = NULL;
+    this.currentVariance = null;
 
     this.camera = camera;
-
-    this.varianceTreeLeft  = new Uint8Array(1<<(GLOBAL_DATA.varianceDepth));
-    this.varianceTreeRight = new Uint8Array(1<<(GLOBAL_DATA.varianceDepth));
+    this.memHandler = memHandler;
+    this.varianceTreeLeft  = new Uint8Array(1<<(this.mapConsts.varianceDepth)); //fills w 0s
+    this.varianceTreeRight = new Uint8Array(1<<(this.mapConsts.varianceDepth));
 }
 
+Patch.prototype.coord2Index = function (x,y) {
+    return this.localHeightStartIdx + y * this.mapConsts.mapWidth + x;
+
+};
 Patch.prototype.reset = function()
 {
-    this.isVisible = false;
+    //this.isVisible = false;
 
-    this.baseLeft.leftChild = NULL;
-    this.baseLeft.rightChild = NULL;
-    this.baseRight.leftChild = NULL;
-    this.baseRight.rightChild = NULL;
+    this.baseLeft.leftChild = null;
+    this.baseLeft.rightChild = null;
+    this.baseRight.leftChild = null;
+    this.baseRight.rightChild = null;
 
     this.baseLeft.baseNeighbor = this.baseRight;
     this.baseRight.baseNeighbor = this.baseLeft;
 
-    this.baseLeft.leftNeighbor = NULL;
-    this.baseLeft.rightNeighbor = NULL;
-    this.baseRight.leftNeighbor = NULL;
-    this.baseRight.rightNeighbor = NULL;
+    this.baseLeft.leftNeighbor = null;
+    this.baseLeft.rightNeighbor = null;
+    this.baseRight.leftNeighbor = null;
+    this.baseRight.rightNeighbor = null;
 
 }
 
 Patch.prototype.computeVariance = function()
 {
-    var leftX = 0;
-    var leftY = GLOBAL_DATA.patchWidth;
-    var leftZ = this.heightMap[this.localHeightStartIdx + GLOBAL_DATA.patchWidth * GLOBAL_DATA.mapWidth];
 
-    var rightX = GLOBAL_DATA.patchWidth ;
+    var leftX = 0;
+    var leftY = this.patchWidth-1;
+    var leftZ = this.heightMap[this.localHeightStartIdx + (this.patchWidth-1) * this.mapConsts.mapWidth];
+
+    var rightX = this.patchWidth-1 ;
     var rightY = 0;
-    var rightZ = this.heightMap[this.localHeightStartIdx + GLOBAL_DATA.patchWidth];
+    var rightZ = this.heightMap[this.localHeightStartIdx + (this.patchWidth-1)];
 
     var apexX = 0;
     var apexY = 0;
@@ -77,19 +76,20 @@ Patch.prototype.computeVariance = function()
     var node = 1;
 
     this.currentVariance = this.varianceTreeLeft;
+
     this.recursiveComputeVariance( leftX, leftY, leftZ,  rightX, rightY, rightZ,  apexX, apexY, apexZ,  node);
 
-    leftX = GLOBAL_DATA.patchWidth ;
+    leftX = this.patchWidth-1 ;
     leftY = 0;
-    leftZ = this.heightMap[this.localHeightStartIdx + GLOBAL_DATA.patchWidth];
+    leftZ = this.heightMap[this.localHeightStartIdx + this.patchWidth-1];
 
     rightX = 0;
-    rightY = GLOBAL_DATA.patchWidth;
-    rightZ = this.heightMap[this.localHeightStartIdx + GLOBAL_DATA.patchWidth * GLOBAL_DATA.mapWidth];
+    rightY = this.patchWidth-1;
+    rightZ = this.heightMap[this.localHeightStartIdx + (this.patchWidth-1) * this.mapConsts.mapWidth];
 
-    apexX = GLOBAL_DATA.patchWidth;
-    apexY = GLOBAL_DATA.patchWidth;
-    apexZ = this.heightMap[this.localHeightStartIdx + (GLOBAL_DATA.patchWidth * GLOBAL_DATA.mapWidth) + GLOBAL_DATA.patchWidth ];
+    apexX = this.patchWidth-1;
+    apexY = this.patchWidth-1;
+    apexZ = this.heightMap[this.localHeightStartIdx + ((this.patchWidth-1) * this.mapConsts.mapWidth) + this.patchWidth-1 ];
 
     node = 1;
 
@@ -106,62 +106,79 @@ Patch.prototype.computeVariance = function()
 //  ~~~~~~~*~~~~~~~  <-- Compute the X and Y coordinates of '*'
 Patch.prototype.recursiveComputeVariance = function(leftX, leftY, leftZ, rightX, rightY, rightZ, apexX, apexY, apexZ, node)
 {
+    //just for debug
+    var leftId = this.coord2Index(leftX,leftY);
+    var rightId = this.coord2Index(rightX,rightY);
+    var apexId = this.coord2Index(apexX,apexY);
+
     var centerX = (leftX + rightX)>>1;
     var centerY = (leftY + rightY)>>1;
+    var centerHeightMapIndex = this.coord2Index(centerX,centerY);
 
-    var centerZ = this.heightMap[this.localHeightStartIdx + centerY * GLOBAL_DATA.mapWidth + centerX];
+
+    var centerZ = this.heightMap[centerHeightMapIndex];
 
     // Variance of this triangle is the actual height at it's hypotenuse midpoint minus the interpolated height.
-	// Use values passed on the stack instead of re-accessing the Height Field.
+    // Use values passed on the stack instead of re-accessing the Height Field.
     var variance = math.abs(math.floor(centerZ) - ((math.floor(leftZ) + math.floor(rightZ)) >> 1));
-
+    debugger;
     // Since we're after speed and not perfect representations,
-	//    only calculate variance down to an 8x8 block
-    if(math.abs(leftX - rightX) >= 8 || math.abs(leftY - rightY) >= 8)
+    //    only calculate variance down to an 8x8 block
+    if(math.abs(leftX - rightX) >= 2 || math.abs(leftY - rightY) >= 2)
     {
+
         //final variance for the node is max of its own varianc and of its children
         variance = math.max(variance, this.recursiveComputeVariance(apexX, apexY, apexZ, leftX, leftY, leftZ, centerX, centerY, centerZ, node<<1));
         variance = math.max(variance, this.recursiveComputeVariance(rightX, rightY, rightZ, apexX, apexY, apexZ, centerX, centerY, centerZ, 1+(node<<1)));
-
-        if(node < (1<<GLOBAL_DATA.varianceDepth))
-        {
-            this.currentVariance[node] = 1 + variance;
-        }
-
-        return variance;
     }
+
+    if(node < (1<<this.mapConsts.varianceDepth))
+    {
+        this.currentVariance[node] = 1 + variance;
+    }
+    //recursive, not used for the last call
+    return variance;
 }
 
 Patch.prototype.tessellate = function()
 {
     this.currentVariance = this.varianceTreeLeft;
-    this.recursiveTessellate();
+    this.recursiveTessellate(this.baseLeft,
+                            this.worldX, this.worldY + this.patchWidth-1,
+                            this.worldX + this.patchWidth-1, this.worldY,
+                            this.worldX, this.worldY,
+                            1);
+    this.currentVariance = this.varianceTreeRight;
+    this.recursiveTessellate(this.baseRight,
+                            this.worldX + this.patchWidth-1, this.worldY,
+                            this.worldX, this.worldY + this.patchWidth-1,
+                            this.worldX + this.patchWidth-1, this.worldY + this.patchWidth-1,
+                            1);
 }
 
 Patch.prototype.recursiveTessellate = function( tri, leftX, leftY, rightX, rightY, apexX, apexY, node )
 {
-    var triVariance = 0;
     var centerX = (leftX + rightX) >> 1 ;
     var centerY = (leftY + rightY) >> 1 ;
 
-    if(node < (1<<GLOBAL.varianceDepth))
+    if(node < (1<<this.mapConsts.varianceDepth))
     {
         //Obs only 2d. for now...
-        var distance = 1.0 + math.sqrt( math.pow(centerX - this.camera.pos.x, 2) + math.pow(centerY - this.camera.pos.z, 2) ) ;
+        var distance = 1.0 + math.sqrt( math.pow(centerX - this.camera.pos[0], 2) + math.pow(centerY - this.camera.pos[2], 2) ) ;
 
         //just a simple formula, not anchor in physics
-        triVariance = (this.currentVariance[node] * GLOBAL_DATA.mapWidth * 2) / distance;
+        triVariance = (this.currentVariance[node] * this.mapConsts.mapWidth * 2) / distance;
     }
     //if there is no variance info in this node we have gotten here by spliting so continue down to the lowest level
     //OR if we are not below the variance tree
-    if(node >= (1<<GLOBAL.varianceDepth) || triVariance > GLOBAL_DATA.frameVariance )
+    if(node >= (1<<this.mapConsts.varianceDepth) || triVariance > this.mapConsts.frameVariance )
     {
         // split this mother fucker
         this.split(tri);
 
         //if tri was split, try split its children again. Tessellate all the way down to one vertex per hightfield entry
         // UNSURE varför dist just >= 3???
-        if(tri.leftChild != NULL && ( math.abs(leftX - rightX) >= 3 || math.abs(leftY - rightY) >= 3  ))
+        if(tri.leftChild != null && ( math.abs(leftX - rightX) >= 3 || math.abs(leftY - rightY) >= 3  ))
         {
             this.recursiveTessellate( tri.leftChild,   apexX,  apexY, leftX, leftY, centerX, centerY,    node<<1  );
             this.recursiveTessellate( tri.rightChild, rightX, rightY, apexX, apexY, centerX, centerY, 1+(node<<1) );
@@ -172,22 +189,23 @@ Patch.prototype.recursiveTessellate = function( tri, leftX, leftY, rightX, right
 Patch.prototype.split = function(tri)
 {
     //allready split, no need to do it again
-    if(tri.leftChild != NULL)
+    if(tri.leftChild != null)
     {
         return;
     }
 
     //if this triangle is not a proper diamond, force split our base neighbor
-    if(tri.baseNeighbor != NULL && tri.baseNeighbor.baseNeighbor != tri)
+    if(tri.baseNeighbor != null && tri.baseNeighbor.baseNeighbor != tri)
     {
         this.split(tri.baseNeighbor);
     }
 
     //create children and link into mesh
-    tri.leftChild = Landscape.allocateTri();
-    tri.rightChild = Landscape.allocateTri();
+    tri.leftChild = this.memHandler.claimNextFreeNode();
+    tri.rightChild = this.memHandler.claimNextFreeNode();
 
-    if(tri.leftChild = NULL)
+    //check if we´re out of memory
+    if(tri.leftChild == null)
     {
         return;
     }
@@ -200,7 +218,7 @@ Patch.prototype.split = function(tri)
     tri.rightChild.rightNeighbor = tri.leftChild;
 
     //link our left neigbhor to the new childre
-    if(tri.leftNeighbor != NULL)
+    if(tri.leftNeighbor != null)
     {
         if(tri.leftNeighbor.baseNeighbor == tri)
         {
@@ -218,7 +236,7 @@ Patch.prototype.split = function(tri)
             ;
         }
     }
-    if(tri.rightNeighbor != NULL)
+    if(tri.rightNeighbor != null)
     {
         if(tri.rightNeighbor.baseNeighbor == tri)
         {
@@ -237,9 +255,9 @@ Patch.prototype.split = function(tri)
         }
     }
     // Link our Base Neighbor to the new children
-    if (tri.baseNeighbor != NULL)
+    if (tri.baseNeighbor != null)
     {
-        if ( tri.baseNeighbor.leftChild != NULL)
+        if ( tri.baseNeighbor.leftChild != null)
         {
             tri.baseNeighbor.leftChild.rightNeighbor = tri.rightChild;
             tri.baseNeighbor.rightChild.leftNeighbor = tri.leftChild;
@@ -247,13 +265,13 @@ Patch.prototype.split = function(tri)
             tri.rightChild.leftNeighbor = tri.baseNeighbor.leftChild;
         }
         else
-            this.split( tri.baseNeighbor);  // Base Neighbor (in a diamond with us) was not split yet, so do that now.
+        this.split( tri.baseNeighbor);  // Base Neighbor (in a diamond with us) was not split yet, so do that now.
     }
     else
     {
         // An edge triangle, trivial case.
-        tri.leftChild.rightNeighbor = NULL;
-        tri.rightChild.leftNeighbor = NULL;
+        tri.leftChild.rightNeighbor = null;
+        tri.rightChild.leftNeighbor = null;
     }
 }
 
@@ -263,47 +281,49 @@ Patch.prototype.render = function()
     var data = { positions: [], normals: [] };
 
     this.recursiveRender(this.baseLeft,
-                        0, GLOBAL_DATA.patchWidth,
-                        GLOBAL_DATA.patchWidth, 0,
-                        0, 0 );
+        0, this.patchWidth-1,
+        this.patchWidth-1, 0,
+        0, 0,
+        data);
 
     this.recursiveRender(this.baseRight,
-                        GLOBAL_DATA.patchWidth, 0,
-                        0, GLOBAL_DATA.patchWidth,
-                        GLOBAL_DATA.patchWidth, GLOBAL_DATA.patchWidth );
+        this.patchWidth-1, 0,
+        0, this.patchWidth-1,
+        this.patchWidth-1, this.patchWidth-1,
+        data);
     return data;
 }
 
 Patch.prototype.recursiveRender = function(tri, leftX, leftY, rightX, rightY, apexX, apexY, triangleData)
 {
     //all nonleaf nodes have both children, so just check for one...
-    if(tri.leftChild != NULL)
+    if(tri.leftChild != null)
     {
-        var centerX = (leftX + leftX)>>1;
-        var centerY = (leftY + leftY)>>1;
+        var centerX = (leftX + rightX)>>1;
+        var centerY = (leftY + rightY)>>1;
 
-        this.recursiveRender(tri.leftChild, apexX, apexY, leftX, leftY, centerX, centerY, triangeData);
-        this.recursiveRender(tri.rightChild, rightX, rightY, apexX, apexY, centerX, centerY, triangeData);
+        this.recursiveRender(tri.leftChild, apexX, apexY, leftX, leftY, centerX, centerY, triangleData);
+        this.recursiveRender(tri.rightChild, rightX, rightY, apexX, apexY, centerX, centerY, triangleData);
     }
     else
     {
-        GLOBAL_DATA.nTrianglesRendered++;
+        this.mapConsts.nTrianglesRendered++;
 
-        var leftZ  = m_HeightMap[this.localHeightStartIdx + (leftY *GLOBAL_DATA.mapWidth)+leftX ];
-        var rightZ = m_HeightMap[this.localHeightStartIdx + (rightY*GLOBAL_DATA.mapWidth)+rightX];
-        var apexZ  = m_HeightMap[this.localHeightStartIdx + (apexY *GLOBAL_DATA.mapWidth)+apexX ];
+        var leftZ  = this.heightMap[this.localHeightStartIdx + (leftY *this.mapConsts.mapWidth)+leftX ];
+        var rightZ = this.heightMap[this.localHeightStartIdx + (rightY*this.mapConsts.mapWidth)+rightX];
+        var apexZ  = this.heightMap[this.localHeightStartIdx + (apexY *this.mapConsts.mapWidth)+apexX ];
 
-        triangeData.positions.push(leftX);
-        triangeData.positions.push(leftZ);
-        triangeData.positions.push(leftY);
+        triangleData.positions.push(leftX);
+        triangleData.positions.push(leftZ);
+        triangleData.positions.push(leftY);
 
-        triangeData.positions.push(rightX);
-        triangeData.positions.push(rightZ);
-        triangeData.positions.push(rightY);
+        triangleData.positions.push(rightX);
+        triangleData.positions.push(rightZ);
+        triangleData.positions.push(rightY);
 
-        triangeData.positions.push(apexX);
-        triangeData.positions.push(apexZ);
-        triangeData.positions.push(apexY);
+        triangleData.positions.push(apexX);
+        triangleData.positions.push(apexZ);
+        triangleData.positions.push(apexY);
 
         var normal = math.cross([
             rightX - leftX,
@@ -317,15 +337,15 @@ Patch.prototype.recursiveRender = function(tri, leftX, leftY, rightX, rightY, ap
 
         triangleData.normals.push( normal[0] );
         triangleData.normals.push( normal[1] );
-        triangleData.normals.push( normal[3] );
+        triangleData.normals.push( normal[2] );
 
         triangleData.normals.push( normal[0] );
         triangleData.normals.push( normal[1] );
-        triangleData.normals.push( normal[3] );
+        triangleData.normals.push( normal[2] );
 
         triangleData.normals.push( normal[0] );
         triangleData.normals.push( normal[1] );
-        triangleData.normals.push( normal[3] );
+        triangleData.normals.push( normal[2] );
     }
 
 }

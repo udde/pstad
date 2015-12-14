@@ -5,11 +5,11 @@ function loadShaders(gl){
 
     var shaders = {};
 
-    // shaders.test = crateShader(
-    //     gl,
-    //     require('./shader.vert')(),
-    //     require('./shader.frag')()
-    // );
+    shaders.test = crateShader(
+        gl,
+        require('../shaders/shader.vert')(),
+        require('../shaders/shader.frag')()
+    );
 
     shaders.ground = crateShader(
         gl,

@@ -6,18 +6,19 @@ var source = require('vinyl-source-stream');
 
 gulp.task('conc',function(){
     return gulp.src([
-         'js/patch.js',
-         'js/landscape.js',
-         'js/loadShaders.js',
-         'js/glMain.js',
-        ])
-        .pipe(concat('concat.js'))
-        .pipe(gulp.dest('js'));
+        'js/nodeMemoryHandler.js',
+        'js/patch.js',
+        'js/landscape.js',
+        'js/loadShaders.js',
+        'js/glMain.js',
+    ])
+    .pipe(concat('concat.js'))
+    .pipe(gulp.dest('js'));
 });
 
 // gulp.task('browserify', function(){
-    // return browserify('index.js')
-            // .bundle()
+// return browserify('index.js')
+// .bundle()
 // });
 
 gulp.task('default', ['conc']);

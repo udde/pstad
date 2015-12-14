@@ -5,29 +5,38 @@ createVAO       = require("gl-vao"),
 clearGL         = require('gl-clear'),
 mat4            = require('gl-mat4'),
 vec3            = require('gl-vec3');
+
 // createCamera    = require('orbit-camera');
 
 var shell = createGL({
 
 });
 
+var createAxes = require("gl-axes");
+var camera = require("game-shell-orbit-camera")(shell)
+
 var clear = clearGL({
     color: [0.8, 0.9, 0.9, 1],
 });
 
+var bounds = [[0,-10,0], [25,25,25]], axes;
+
 var meshes, ground, groundShader, cam, eye, target, up, camUp, camRight, camToTarget;
-var nBlocks, nLevels, blocks, levels = [0,0,0,0], landscape;
+var nBlocks, nLevels, blocks, levels = [0,0,0,0], landscape, vao;
 
 shell.on('gl-init', function() {
     var gl = shell.gl;
     gl.enable(gl.DEPTH_TEST);
     gl.enable(gl.CULL_FACE);
-    gl.cullFace(gl.BACK);
+    gl.cullFace(gl.FRONT_AND_BACK);
+
+    camera.lookAt(bounds[1], [10,10,40], [0, 1, 0])
+    axes = createAxes(gl, {bounds:bounds});
 
     //camshit
     cam = mat4.create()
     eye = vec3.create()
-    vec3.set(eye, 0, 10, 10);
+    vec3.set(eye, 40, 10, 10);
     target = vec3.create()
     vec3.set(target, 0, 0, 0);
     up = vec3.create()
@@ -40,7 +49,7 @@ shell.on('gl-init', function() {
     // vec3.cross(camUp, camRight, camToTarget);
 
     mat4.lookAt(cam, eye, target, up)
-    console.log(cam);
+    // console.log(cam);
     // shader = createShader(gl,vs(),fs());
     // shaders = require('./shaders/shaders.js')(gl);
     shaders = loadShaders(gl);
@@ -51,7 +60,42 @@ shell.on('gl-init', function() {
     nBlocks = ground.nBlocks;
     heightMap = ground.heightMap;
 
-    landscape = new Landscape();
+
+    landscape = new Landscape(heightMap, 9, 1, 0.5, {pos: eye}, {x:0, y:0, z:0});
+
+    debugger;
+    landscape.reset();
+
+    landscape.tessellate();
+    data = landscape.generateTriangleData();
+
+
+    buffer2 = createBuffer(gl, data.positions);
+    colorBuffer = createBuffer(gl, [ 0.5, 0.5, 0.5, 0, 1, 0, 1, 1, 0 ]);
+
+    vao = createVAO(gl, [
+        {
+            "buffer": buffer2,
+            "type": gl.FLOAT,
+            "size": 3
+        },
+        {
+            "buffer": buffer2,
+            "type": gl.FLOAT,
+            "size": 3
+        },
+        {
+            "buffer": buffer2,
+            "type": gl.FLOAT,
+            "size": 3
+        },
+        {
+            "buffer": buffer2,
+            "type": gl.FLOAT,
+            "size": 1
+        }
+    ]);
+
 
     groundShader.attributes.aPosition.location = 0;
     groundShader.attributes.aColor.location = 1;
@@ -64,29 +108,47 @@ shell.on('gl-render', function(t) {
     var gl = shell.gl;
     clear(gl);
 
+    var cameraParameters = {
+        view: camera.view(),
+        projection: mat4.perspective(
+        mat4.create(),
+        Math.PI/4.0,
+        shell.width/shell.height,
+        0.1,
+        1000.0)
+    }
+
     //draw the ground
     groundShader.bind();
     groundShader.uniforms.t += 0.01;
     groundShader.uniforms.uCameraPos = eye;
 
 
-    mat4.lookAt(cam, eye, target, up)
-
+    // mat4.lookAt(cam, eye, target, up)
     var scratch = mat4.create()
-    groundShader.uniforms.projection = mat4.perspective(scratch, Math.PI/4.0, shell.width/shell.height, 0.1, 1000.0)
-    groundShader.uniforms.view = cam
+
+
+    groundShader.uniforms.model = scratch;
+    groundShader.uniforms.projection = cameraParameters.projection;
+    groundShader.uniforms.view = cameraParameters.view;
+
+
+    // groundShader.uniforms.projection = mat4.perspective(scratch, Math.PI/4.0, shell.width/shell.height, 0.1, 1000.0)
+    // groundShader.uniforms.view = cam
     var model = mat4.create(), unityM = mat4.create();
 
-    for (var j = 0; j < nBlocks; j++) {
-        var i = j + 4*levels[j];
+    // for (var j = 0; j < nBlocks; j++) {
+        // var i = j + 4*levels[j];
 
         // i = level * 4 + 2*y + x
-        mat4.translate(model, unityM, vec3.fromValues(ground.blocks[i].offset[0],ground.blocks[i].offset[1],ground.blocks[i].offset[2]) );
+        // mat4.translate(model, unityM, vec3.fromValues(ground.blocks[i].offset[0],ground.blocks[i].offset[1],ground.blocks[i].offset[2]) );
         groundShader.uniforms.model = model;
-        ground.blocks[i].vao.bind();
-        ground.blocks[i].vao.draw(gl.TRIANGLES, ground.blocks[i].nVertices);
-        ground.blocks[i].vao.unbind();
-    }
+        vao.bind();
+        vao.draw(gl.LINES, data.positions.length/3);
+        vao.unbind();
+    // }
+
+     axes.draw(cameraParameters)
 
 });
 

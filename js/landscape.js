@@ -2,32 +2,27 @@
 var Landscape = function(heightMap, mapWidth, nPatchesPerSide, scale, camera, worldPosition )
 {
     //Constants
+    this.mapConsts = {};
     this.mapConsts.mapWidth = mapWidth;
     this.mapConsts.nPatchesPerSide = nPatchesPerSide;
-    this.mapConsts.patchWidth = this.mapWidth/this.nPatchesPerSide;
-    this.mapConsts.poolSize = 32768;
+    this.mapConsts.patchWidth = mapWidth/nPatchesPerSide;
     this.mapConsts.scale = scale;
 
     //hardcoded
     //depth of vaiance: tree should be close to sqrt(patchWidth)+1
     this.mapConsts.varianceDepth = 9;
     //beginnig fram variance, should be high
-    this.mapConsts.frameVariance = 50;
+    this.mapConsts.frameVariance = 10;
     this.mapConsts.desiredTriangleTessellations = 10000;
     this.mapConsts.nTrianglesRendered = 0;
-
-    this.nextTriNode = NULL;
-    this.nodePool = [];
-    for (var i = 0; i < this.mapConsts.poolSize; i++)
-        this.nodePool[i] = new TriTreeNode();
 
     //instance variables
     this.heightMap = heightMap;
     this.camera = camera;
     this.worldPosition = worldPosition;
     this.patches = new Array(this.nPatchesPerSide);
-    this.nextTriNode = 0;
 
+    this.memHandler = new NodeMemoryHandler(32768)
 
     //create the patches in a 2d array
     this.createPatches();
@@ -37,31 +32,20 @@ var Landscape = function(heightMap, mapWidth, nPatchesPerSide, scale, camera, wo
 
 Landscape.prototype.createPatches = function()
 {
-    for(var y = 0; y < this.nPatchesPerSide ; y++)
-    {
-        this.patches[i] = new Array(this.nPatchesPerSide);
-        for(var x = 0; x < this.nPatchesPerSide ; x++)
-        {
-            this.patches[y][x] = new Patch(this.heightMap, this.mapConsts, x*this.mapConsts.patchWidth,
-            y*this.mapConsts.mapWidth, worldPosition.x, worldPosition.z, this.camera );
 
-            this.patches[i][j].computeVariance();
+    for(var y = 0; y < this.mapConsts.nPatchesPerSide ; y++)
+    {
+        this.patches[y] = new Array(this.nPatchesPerSide);
+        for(var x = 0; x < this.mapConsts.nPatchesPerSide ; x++)
+        {
+
+            this.patches[y][x] = new Patch(this.heightMap, this.mapConsts, x*this.mapConsts.patchWidth,
+            y*this.mapConsts.patchWidth, this.worldPosition.x, this.worldPosition.z, this.camera,this.memHandler );
+            this.patches[y][x].computeVariance();
         }
     }
 }
 
-Landscape.prototype.claimNextFreeNode = function()
-{
-    //check if run out of nodes
-    if(this.nextTriNode >= this.mapConsts.poolSize)
-        return NULL;
-
-    var node = this.nodePool[this.nextTriNode++];
-    node.leftChild = NULL;
-    node.rightChild = NULL;
-
-    return node;
-}
 
 Landscape.prototype.tessellate = function()
 {
@@ -83,16 +67,33 @@ Landscape.prototype.generateTriangleData = function()
     for(var y = 0; y < this.mapConsts.nPatchesPerSide; y++)
     for(var x = 0; x < this.mapConsts.nPatchesPerSide; x++)
     {
-        if(this.patches[y][x].isVisible)
+        currentPatch = this.patches[y][x];
+        if(currentPatch.isVisible)
         {
-            var patchData = this.patches[y][x].render();
+
+            var patchData = currentPatch.render();
+
             totalData.positions = totalData.positions.concat(patchData.positions);
             totalData.normals = totalData.normals.concat(patchData.normals);
         }
     }
+    return totalData;
 }
 
 Landscape.prototype.reset = function()
 {
+    this.nextTriNode = 0;
+    this.nTrianglesRendered = 0;
+    for(var y = 0; y < this.mapConsts.nPatchesPerSide; y++)
+    for(var x = 0; x < this.mapConsts.nPatchesPerSide; x++)
+    {
+        currentPatch = this.patches[y][x];
+        currentPatch.reset();
 
+        if(currentPatch.isVisible)
+        {
+            //TODO
+
+        }
+    }
 }
