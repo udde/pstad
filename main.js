@@ -30,9 +30,9 @@ function init() {
 	document.body.appendChild(container);
 
 	camera = new THREE.PerspectiveCamera(30, window.innerWidth / window.innerHeight, 1, 100000);
-	camera.position.x = 10;
-	camera.position.y = 10;
-	camera.position.z = 2800;
+	camera.position.x = 0;
+	camera.position.y = -2300;
+	camera.position.z = 900;
 	camera.lookAt({
 		x: 0,
 		y: 0,
@@ -46,7 +46,7 @@ function init() {
 
 	light = new THREE.DirectionalLight(0xdfebff, 1.75);
 	light.position.set(0.0, 0.0, 400.0);
-	light.position.set(100.0, -200.0, 100.0);
+	light.position.set(200.0, -200.0, 100.0);
 	light.position.multiplyScalar(1.3);
 
 	light.castShadow = true;
@@ -66,7 +66,7 @@ function init() {
 	light.shadowDarkness = 0.2;
 
 	scene.add(light);
-	scene.add( new THREE.DirectionalLightHelper(light, 100.0) );
+	// scene.add( new THREE.DirectionalLightHelper(light, 100.0) );
 
 	var groundMaterial = new THREE.MeshPhongMaterial({
 		color: 0x6C6C6C
@@ -140,13 +140,13 @@ tree = new THREE.Mesh(new THREE.SphereGeometry(20, 10 , 10), treeMaterial);
 tree.translateY(-100);
 tree.translateZ(-10);
 tree.rotateX(1.5);
-scene.add(tree);
+// scene.add(tree);
 
 tree2 = new THREE.Mesh(new THREE.CylinderGeometry( 6, 12, 50, 32 ), groundMaterial);
 tree2.translateY(-100);
 tree2.translateZ(-30);
 tree2.rotateX(1.5);
-scene.add(tree2);
+// scene.add(tree2);
 
 
 createTree = function(){
@@ -173,7 +173,7 @@ placeTree = function(tree, position, scene){
 	console.log("added tree to scene.. at: " + position.x + " " + position.y+ " " + position.z);
 };
 
-placeTree(createTree(), {x: 40, y: -150, z: 0 }, scene);
+// placeTree(createTree(), {x: 40, y: -150, z: 0 }, scene);
 
 water = new THREE.Mesh(new THREE.PlaneGeometry(800, 600, 32, 24), waterMaterial);
 water2 = new THREE.Mesh(new THREE.PlaneGeometry(800, 600, 32, 24),new THREE.MeshPhongMaterial( { color: 0x77bbee, shading: THREE.FlatShading } ));
@@ -236,7 +236,7 @@ cube.translateY(-10);
 cube.translateX(200);
 scene2 = new THREE.Scene();
 scene2.add(light);
-scene.add( cube );
+// scene.add( cube );
 
 
 
@@ -249,6 +249,8 @@ webglRenderer.domElement.style.position = "relative";
 webglRenderer.shadowMap.enabled = true;
 webglRenderer.shadowMapSoft = true;
 webglRenderer.autoClear = false;
+
+camera.lookAt(scene.position);
 
 geometry = new THREE.SphereGeometry(3800, 60, 40);
 var uniforms = {
@@ -376,7 +378,7 @@ function renderTxture(){
 
 }
 function render() {
-	camera.lookAt(scene.position);
+	// camera.lookAt(scene.position);
 	stats.begin();
 	var delta = clock.getDelta();
 	stats.end();
