@@ -68,9 +68,10 @@ shell.on('gl-render', function(t) {
     var scratch = mat4.create()
     groundShader.uniforms.projection = mat4.perspective(scratch, Math.PI/4.0, shell.width/shell.height, 0.1, 1000.0)
     groundShader.uniforms.view = cam
+    groundShader.uniforms.uCameraPos = eye
 
     var model = mat4.create(), unityM = mat4.create();
-    levels = [0,0,1,0]
+    levels = [0,0,0,0]
     for (var j = 0; j < nBlocks; j++) {
         var i = j + 4*levels[j];
 

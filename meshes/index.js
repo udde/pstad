@@ -11,7 +11,7 @@ function init(gl) {
     // var t1 = window.performance.now();
     var bigres = 3;
     var bigsize = math.pow(2,bigres);
-    var res = 3;
+    var res = 5;
     var size = math.pow(2,res);
     var blocks = {x : 2, y : 2};
     var levels = 2;
@@ -201,8 +201,8 @@ function getHeight(x ,y)
         f = f*2;
         height += s * simplex.noise2D(f*x, f*y);
     }
-    if(height > 3)
-        height *= (height/5.5);
+    // if(height > 3)
+        // height *= (height/5.5);
 
 
     // var waterNoise = 0.25 * simplex.noise2D(2.0*x,2.0*y);
