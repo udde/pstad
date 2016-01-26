@@ -14,6 +14,7 @@ var shell = createGL({
 
 var createAxes = require("gl-axes");
 var camera = require("game-shell-orbit-camera")(shell)
+// camera = require('first-person-camera')()
 
 var clear = clearGL({
     color: [0.8, 0.9, 0.9, 1],
@@ -30,13 +31,10 @@ shell.on('gl-init', function() {
     gl.enable(gl.CULL_FACE);
     gl.cullFace(gl.FRONT_AND_BACK);
 
-    camera.lookAt(bounds[1], [10,10,40], [0, 1, 0])
-    axes = createAxes(gl, {bounds:bounds});
-
     //camshit
     cam = mat4.create()
     eye = vec3.create()
-    vec3.set(eye, 40, 10, 10);
+    vec3.set(eye, 0, 10, 30);
     target = vec3.create()
     vec3.set(target, 0, 0, 0);
     up = vec3.create()
@@ -47,6 +45,10 @@ shell.on('gl-init', function() {
     // vec3.cross(camRight, camToTarget, up );
     // camUp = vec3.create();
     // vec3.cross(camUp, camRight, camToTarget);
+
+    camera.lookAt(target, eye, [0, 1, 0])
+    axes = createAxes(gl, {bounds:bounds});
+
 
     mat4.lookAt(cam, eye, target, up)
     // console.log(cam);
@@ -60,18 +62,23 @@ shell.on('gl-init', function() {
     nBlocks = ground.nBlocks;
     heightMap = ground.heightMap;
 
+    landscape = new Landscape(heightMap32, 33, 1, 0.5, {pos: eye}, {x:0, y:0, z:0});
 
-    landscape = new Landscape(heightMap, 9, 1, 0.5, {pos: eye}, {x:0, y:0, z:0});
-
-    debugger;
+    // debugger;
     landscape.reset();
 
     landscape.tessellate();
     data = landscape.generateTriangleData();
+    // debugger;
 
+    colorBuffer = createBuffer(gl, [ 0.5, 0.5, 0.5, 0, 1, 0, 1, 1, 0 ]);
 
     buffer2 = createBuffer(gl, data.positions);
-    colorBuffer = createBuffer(gl, [ 0.5, 0.5, 0.5, 0, 1, 0, 1, 1, 0 ]);
+
+    normals2 = createBuffer(gl, data.normals);
+
+    depth = createBuffer(gl, data.depth);
+
 
     vao = createVAO(gl, [
         {
@@ -80,12 +87,12 @@ shell.on('gl-init', function() {
             "size": 3
         },
         {
-            "buffer": buffer2,
+            "buffer": normals2,
             "type": gl.FLOAT,
             "size": 3
         },
         {
-            "buffer": buffer2,
+            "buffer": normals2,
             "type": gl.FLOAT,
             "size": 3
         },
@@ -108,6 +115,8 @@ shell.on('gl-render', function(t) {
     var gl = shell.gl;
     clear(gl);
 
+    // camera.lookAt(target, eye, [0, 1, 0])
+
     var cameraParameters = {
         view: camera.view(),
         projection: mat4.perspective(
@@ -117,6 +126,8 @@ shell.on('gl-render', function(t) {
         0.1,
         1000.0)
     }
+     axes.draw(cameraParameters)
+
 
     //draw the ground
     groundShader.bind();
@@ -144,11 +155,10 @@ shell.on('gl-render', function(t) {
         // mat4.translate(model, unityM, vec3.fromValues(ground.blocks[i].offset[0],ground.blocks[i].offset[1],ground.blocks[i].offset[2]) );
         groundShader.uniforms.model = model;
         vao.bind();
-        vao.draw(gl.LINES, data.positions.length/3);
+        vao.draw(gl.TRIANGLES, data.positions.length/3);
         vao.unbind();
     // }
 
-     axes.draw(cameraParameters)
 
 });
 

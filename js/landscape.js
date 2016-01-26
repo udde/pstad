@@ -1,18 +1,23 @@
+math = require('mathjs')
 //LANDSCAPE
 var Landscape = function(heightMap, mapWidth, nPatchesPerSide, scale, camera, worldPosition )
 {
     //Constants
     this.mapConsts = {};
     this.mapConsts.mapWidth = mapWidth;
+    this.mapConsts.nSamplesPerMapDim = mapWidth + 1;
+    this.mapConsts.nMaxPossibleLeaves = math.pow(2,mapWidth);
+    this.mapConsts.maxTreeDepth = math.log(this.mapConsts.nMaxPossibleLeaves,2);
     this.mapConsts.nPatchesPerSide = nPatchesPerSide;
     this.mapConsts.patchWidth = mapWidth/nPatchesPerSide;
     this.mapConsts.scale = scale;
+    this.mapConsts.minTriangleWidthForVariance = 3;
 
     //hardcoded
     //depth of vaiance: tree should be close to sqrt(patchWidth)+1
     this.mapConsts.varianceDepth = 9;
     //beginnig fram variance, should be high
-    this.mapConsts.frameVariance = 10;
+    this.mapConsts.frameVariance = 7;
     this.mapConsts.desiredTriangleTessellations = 10000;
     this.mapConsts.nTrianglesRendered = 0;
 
@@ -29,6 +34,9 @@ var Landscape = function(heightMap, mapWidth, nPatchesPerSide, scale, camera, wo
 
 
 }
+
+
+
 
 Landscape.prototype.createPatches = function()
 {
@@ -62,7 +70,7 @@ Landscape.prototype.tessellate = function()
 
 Landscape.prototype.generateTriangleData = function()
 {
-    var totalData = { positions: [], normals: [] };
+    var totalData = { positions: [], normals: [], depth: [] };
 
     for(var y = 0; y < this.mapConsts.nPatchesPerSide; y++)
     for(var x = 0; x < this.mapConsts.nPatchesPerSide; x++)
@@ -75,6 +83,7 @@ Landscape.prototype.generateTriangleData = function()
 
             totalData.positions = totalData.positions.concat(patchData.positions);
             totalData.normals = totalData.normals.concat(patchData.normals);
+            totalData.depth = totalData.depth.concat(patchData.depth);
         }
     }
     return totalData;
